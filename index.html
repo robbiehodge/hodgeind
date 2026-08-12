@@ -294,14 +294,11 @@
     display:grid;grid-template-columns:1fr;gap:16px;
   }
   .gallery-grid img{
-    width:100%;object-fit:cover;
+    width:100%;aspect-ratio:4/3;object-fit:cover;
     border:1px solid var(--line);display:block;
-    height:280px;
   }
-  @media(min-width:760px){
-    .gallery-grid{grid-template-columns:1.4fr 1fr;grid-template-rows:repeat(3,1fr);height:580px;}
-    .gallery-grid img{height:100%;}
-    .gallery-grid img:first-of-type{grid-row:1 / span 3;}
+  @media(min-width:640px){
+    .gallery-grid{grid-template-columns:1fr 1fr;}
   }
 
   /* ---------- ABOUT ---------- */
@@ -878,8 +875,13 @@
     }
     function showPopup(){
       if (isDismissed()) return;
-      var rect = contactEl.getBoundingClientRect();
-      if (rect.top < window.innerHeight) return;
+      var contactRect = contactEl.getBoundingClientRect();
+      if (contactRect.top < window.innerHeight) return;
+      var workEl = document.getElementById('work');
+      if (workEl) {
+        var workRect = workEl.getBoundingClientRect();
+        if (workRect.top < window.innerHeight && workRect.bottom > 0) return;
+      }
       popup.classList.add('visible');
     }
 
