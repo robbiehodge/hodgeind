@@ -291,15 +291,18 @@
   /* ---------- GALLERY ---------- */
   .gallery{background:var(--paper-dim);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
   .gallery-grid{
-    display:grid;grid-template-columns:1fr;gap:20px;
+    display:grid;grid-template-columns:1fr;gap:16px;
   }
-  @media(min-width:760px){.gallery-grid{grid-template-columns:1.6fr 1fr;}}
   .gallery-grid img{
-    width:100%;height:100%;object-fit:cover;
+    width:100%;object-fit:cover;
     border:1px solid var(--line);display:block;
-    max-height:520px;
+    height:280px;
   }
-  @media(min-width:760px){.gallery-grid img{max-height:560px;}}
+  @media(min-width:760px){
+    .gallery-grid{grid-template-columns:1.4fr 1fr;grid-template-rows:repeat(3,1fr);height:580px;}
+    .gallery-grid img{height:100%;}
+    .gallery-grid img:first-of-type{grid-row:1 / span 3;}
+  }
 
   /* ---------- ABOUT ---------- */
   .about{background:var(--charcoal);color:var(--paper);}
@@ -642,11 +645,13 @@
     <div class="section-head">
       <span class="kicker">Our Work</span>
       <h2>Systems built to disappear into rooms like this one.</h2>
-      <p>A recent Charlotte-area indoor-outdoor build with integrated whole-home audio, lighting, and automation, planned alongside the architect from the start.</p>
+      <p>A recent Charlotte-area indoor-outdoor build with integrated whole-home audio, lighting, and automation, planned alongside the architect from the start, then handed off with a control system simple enough for the whole family to use.</p>
     </div>
     <div class="gallery-grid">
       <img src="/gallery-1.jpg" alt="Indoor-outdoor pool house at dusk with integrated lighting and audio, Charlotte NC" loading="lazy">
       <img src="/gallery-2.jpg" alt="Ceiling-integrated speakers and pendant lighting over a kitchen island" loading="lazy">
+      <img src="/gallery-3.jpg" alt="Handheld Control4 remote controlling pool house lighting, fans, and whole-home audio poolside" loading="lazy">
+      <img src="/gallery-4.jpg" alt="Wall-mounted smart home touchscreen showing room temperature and now-playing audio next to a lighting keypad" loading="lazy">
     </div>
   </div>
 </section>
