@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thank You | Hodge AV</title>
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://www.hodge-ind.com/thank-you.html">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#161512;--paper:#f6f3ee;--charcoal:#221f1b;
+    --brass:#a9793f;--brass-light:#c99a5f;--line-dark:rgba(246,243,238,0.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--charcoal);color:var(--paper);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:32px;text-align:center;position:relative;overflow:hidden;
+  }
+  body::before{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(ellipse 700px 500px at 82% 8%, rgba(169,121,63,0.22), transparent 60%),
+      radial-gradient(ellipse 600px 500px at 10% 100%, rgba(169,121,63,0.10), transparent 60%);
+    pointer-events:none;
+  }
+  .card{position:relative;max-width:520px;}
+  .eyebrow{
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    font-size:12px;letter-spacing:0.18em;text-transform:uppercase;
+    color:var(--brass-light);font-weight:600;margin-bottom:24px;
+  }
+  .eyebrow::before,.eyebrow::after{content:"";width:28px;height:1px;background:var(--brass-light);}
+  h1{
+    font-family:'Cormorant Garamond',serif;font-weight:600;
+    font-size:clamp(32px,5vw,46px);margin-bottom:20px;line-height:1.15;
+  }
+  p{font-size:16px;color:rgba(246,243,238,0.72);margin-bottom:32px;line-height:1.6;}
+  a.btn{
+    display:inline-block;padding:14px 30px;
+    border:1px solid rgba(246,243,238,0.5);
+    color:var(--paper);font-size:12.5px;letter-spacing:0.08em;text-transform:uppercase;
+    font-weight:600;transition:background .2s,color .2s;text-decoration:none;
+  }
+  a.btn:hover{background:var(--paper);color:var(--charcoal);}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="eyebrow">Hodge AV</div>
+    <h1>Thanks, your project details are in.</h1>
+    <p>We've received your message and typically reply within one business day. In the meantime, feel free to explore more about how we work.</p>
+    <a href="/" class="btn">Back to Hodge AV</a>
+  </div>
+</body>
+</html>
