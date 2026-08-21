@@ -455,7 +455,7 @@
   footer .foot-links a:hover{color:var(--paper);}
 
   /* ---------- SCROLL-SCRUB HERO ---------- */
-  .scrub-track{position:relative;height:340vh;}
+  .scrub-track{position:relative;height:220vh;}
   .scrub-stage{
     position:sticky;top:0;height:100vh;
     display:flex;align-items:center;justify-content:center;
@@ -466,76 +466,35 @@
   .scrub-video-wrap img{width:100%;height:100%;object-fit:cover;}
   .scrub-video-wrap::after{
     content:"";position:absolute;inset:0;
-    background:linear-gradient(105deg,
-      rgba(14,12,10,.96) 0%,
-      rgba(14,12,10,.80) 32%,
-      rgba(14,12,10,.42) 60%,
-      rgba(14,12,10,.18) 100%);
+    background:linear-gradient(to bottom,
+      rgba(10,8,6,.72) 0%,
+      rgba(10,8,6,.62) 40%,
+      rgba(10,8,6,.78) 100%);
   }
   .scrub-content{
     position:relative;z-index:1;
-    width:100%;max-width:1180px;padding:0 32px;
-    display:grid;grid-template-columns:1fr 1fr;
-    align-items:end;gap:60px;
+    width:100%;max-width:860px;
+    padding:0 32px;
+    text-align:center;
   }
-  .scrub-left{padding-bottom:80px;}
   .scrub-eyebrow{
-    display:flex;align-items:center;gap:12px;
+    display:inline-flex;align-items:center;gap:12px;
     font-size:12px;letter-spacing:0.18em;text-transform:uppercase;
-    color:var(--brass-light);font-weight:600;margin-bottom:26px;
+    color:var(--brass-light);font-weight:600;margin-bottom:28px;
   }
-  .scrub-eyebrow::before{content:"";width:34px;height:1px;background:var(--brass-light);}
+  .scrub-eyebrow::before,.scrub-eyebrow::after{content:"";width:28px;height:1px;background:var(--brass-light);}
   .scrub-title{
     font-family:'Cormorant Garamond',Georgia,serif;
-    font-size:clamp(38px,6vw,68px);font-weight:500;
-    line-height:1.08;max-width:16ch;
-    color:var(--paper);margin-bottom:24px;
+    font-size:clamp(42px,6.5vw,76px);font-weight:500;
+    line-height:1.06;color:var(--paper);margin-bottom:28px;
   }
   .scrub-title em{color:var(--brass-light);font-style:normal;}
   .scrub-body{
-    font-size:16px;line-height:1.75;
-    color:rgba(246,243,238,0.65);max-width:48ch;margin-bottom:36px;
+    font-size:17px;line-height:1.72;
+    color:rgba(246,243,238,0.72);max-width:52ch;
+    margin:0 auto 40px;
   }
-  .scrub-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
-  .scrub-right{padding-bottom:80px;}
-  .scrub-steps-label{
-    font-size:11px;letter-spacing:0.2em;text-transform:uppercase;
-    color:rgba(246,243,238,0.3);margin-bottom:18px;
-  }
-  .scrub-stop{
-    display:flex;align-items:center;gap:14px;
-    padding:14px 0;border-bottom:1px solid rgba(246,243,238,0.08);
-    opacity:0.25;transition:opacity 0.4s ease;
-  }
-  .scrub-stop:first-of-type{border-top:1px solid rgba(246,243,238,0.08);}
-  .scrub-stop.live{opacity:1;}
-  .scrub-stop-num{
-    font-family:'Cormorant Garamond',serif;font-size:15px;
-    color:var(--brass-light);width:22px;flex-shrink:0;
-  }
-  .scrub-stop-info{flex:1;}
-  .scrub-stop-title{
-    font-family:'Cormorant Garamond',serif;font-size:19px;
-    font-weight:500;color:var(--paper);margin-bottom:2px;
-  }
-  .scrub-stop-sub{font-size:12.5px;color:rgba(246,243,238,0.45);}
-  .scrub-stop-tick{
-    width:20px;height:20px;border-radius:50%;
-    border:1px solid rgba(169,121,63,0.4);
-    display:flex;align-items:center;justify-content:center;flex-shrink:0;
-    transition:background .3s,border-color .3s;
-  }
-  .scrub-stop.live .scrub-stop-tick{background:var(--brass);border-color:var(--brass);}
-  .scrub-stop-tick svg{width:10px;height:10px;stroke:var(--charcoal);fill:none;opacity:0;transition:opacity .3s;}
-  .scrub-stop.live .scrub-stop-tick svg{opacity:1;}
-  .scrub-progress{
-    height:2px;background:rgba(246,243,238,0.12);
-    margin-top:24px;position:relative;overflow:hidden;border-radius:1px;
-  }
-  .scrub-progress i{
-    position:absolute;inset:0 auto 0 0;
-    width:0%;background:var(--brass);display:block;
-  }
+  .scrub-actions{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;}
   .scrub-scroll-hint{
     position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
     display:flex;flex-direction:column;align-items:center;gap:10px;z-index:2;
@@ -543,7 +502,7 @@
   }
   .scrub-scroll-hint span{
     font-size:10px;letter-spacing:0.2em;text-transform:uppercase;
-    color:rgba(246,243,238,0.25);
+    color:rgba(246,243,238,0.3);
   }
   .scrub-scroll-line{
     width:1px;height:44px;
@@ -552,15 +511,45 @@
   }
   @keyframes scrubPulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
   @keyframes scrubFadeIn{from{opacity:0;}to{opacity:1;}}
+
+  /* --- Build sequence strip below hero --- */
+  .build-strip{
+    background:var(--charcoal);
+    border-bottom:1px solid var(--line-dark);
+    padding:0;
+  }
+  .build-strip-inner{
+    max-width:var(--max);margin:0 auto;
+    display:grid;grid-template-columns:repeat(4,1fr);
+  }
+  .build-step{
+    padding:40px 32px;
+    border-right:1px solid var(--line-dark);
+    display:flex;gap:16px;align-items:flex-start;
+  }
+  .build-step:last-child{border-right:none;}
+  .build-step-num{
+    font-family:'Cormorant Garamond',serif;font-size:22px;
+    color:var(--brass);font-weight:600;flex-shrink:0;line-height:1;margin-top:2px;
+  }
+  .build-step-title{
+    font-family:'Cormorant Garamond',serif;font-size:19px;
+    font-weight:500;color:var(--paper);margin-bottom:4px;
+  }
+  .build-step-sub{font-size:12.5px;color:rgba(246,243,238,0.45);line-height:1.5;}
   @media(max-width:860px){
-    .scrub-track{height:280vh;}
-    .scrub-content{grid-template-columns:1fr;gap:32px;padding:0 20px;}
-    .scrub-left,.scrub-right{padding-bottom:0;}
-    .scrub-right{display:none;}
-    .scrub-video-wrap::after{
-      background:linear-gradient(180deg,
-        rgba(14,12,10,.75) 0%,rgba(14,12,10,.92) 60%,rgba(14,12,10,.97) 100%);
-    }
+    .scrub-track{height:180vh;}
+    .scrub-content{padding:0 20px;}
+    .scrub-title{font-size:clamp(36px,8vw,52px);}
+    .build-strip-inner{grid-template-columns:1fr 1fr;}
+    .build-step{border-right:1px solid var(--line-dark);border-bottom:1px solid var(--line-dark);}
+    .build-step:nth-child(2n){border-right:none;}
+    .build-step:nth-last-child(-n+2){border-bottom:none;}
+  }
+  @media(max-width:480px){
+    .build-strip-inner{grid-template-columns:1fr;}
+    .build-step{border-right:none;border-bottom:1px solid var(--line-dark);}
+    .build-step:last-child{border-bottom:none;}
   }
 </style>
 </head>
@@ -596,62 +585,57 @@
       </div>
 
       <div class="scrub-content">
-        <div class="scrub-left">
-          <div class="scrub-eyebrow">AV, Smart Home &amp; Custom Doors</div>
-          <h1 class="scrub-title">Systems and materials designed into the blueprint, not <em>bolted on after.</em></h1>
-          <p class="scrub-body">Hodge Industries works alongside builders, architects, and homeowners on new builds, renovations, and upgrades — from whole-home audio and automation to the custom doors that finish the space.</p>
-          <div class="scrub-actions">
-            <a href="#contact" class="btn btn-outline">Start a Project</a>
-            <a href="#services" class="btn" style="background:transparent;border-color:rgba(246,243,238,0.5);">View Services</a>
-          </div>
-        </div>
-
-        <div class="scrub-right">
-          <p class="scrub-steps-label">The Build Sequence</p>
-          <div class="scrub-stop" id="scrub-s1">
-            <span class="scrub-stop-num">01</span>
-            <div class="scrub-stop-info">
-              <div class="scrub-stop-title">Structure</div>
-              <div class="scrub-stop-sub">Foundation, framing, flat roof, cedar soffit</div>
-            </div>
-            <div class="scrub-stop-tick"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          </div>
-          <div class="scrub-stop" id="scrub-s2">
-            <span class="scrub-stop-num">02</span>
-            <div class="scrub-stop-info">
-              <div class="scrub-stop-title">Glass Doors</div>
-              <div class="scrub-stop-sub">Accordion panels, dark aluminum frames, hardware</div>
-            </div>
-            <div class="scrub-stop-tick"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          </div>
-          <div class="scrub-stop" id="scrub-s3">
-            <span class="scrub-stop-num">03</span>
-            <div class="scrub-stop-info">
-              <div class="scrub-stop-title">Audio / Video</div>
-              <div class="scrub-stop-sub">Flush speakers, display, lighting — all come alive</div>
-            </div>
-            <div class="scrub-stop-tick"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          </div>
-          <div class="scrub-stop" id="scrub-s4">
-            <span class="scrub-stop-num">04</span>
-            <div class="scrub-stop-info">
-              <div class="scrub-stop-title">Complete</div>
-              <div class="scrub-stop-sub">Your outdoor space, fully realized</div>
-            </div>
-            <div class="scrub-stop-tick"><svg viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          </div>
-          <div class="scrub-progress"><i id="scrubBar"></i></div>
+        <div class="scrub-eyebrow">AV, Smart Home &amp; Custom Doors</div>
+        <h1 class="scrub-title">Systems and materials designed into the blueprint, not <em>bolted on after.</em></h1>
+        <p class="scrub-body">Hodge Industries works alongside builders, architects, and homeowners on new builds, renovations, and upgrades — from whole-home audio and automation to the custom doors that finish the space.</p>
+        <div class="scrub-actions">
+          <a href="#contact" class="btn btn-outline">Start a Project</a>
+          <a href="#services" class="btn" style="background:transparent;border-color:rgba(246,243,238,0.5);">View Services</a>
         </div>
       </div>
 
       <div class="scrub-scroll-hint">
         <div class="scrub-scroll-line"></div>
-        <span>Scroll to build</span>
+        <span>Scroll</span>
       </div>
 
     </div>
   </div>
 </section>
+
+<!-- BUILD SEQUENCE STRIP -->
+<div class="build-strip">
+  <div class="build-strip-inner">
+    <div class="build-step">
+      <span class="build-step-num">01</span>
+      <div>
+        <div class="build-step-title">Structure</div>
+        <div class="build-step-sub">Foundation, framing, flat roof, cedar soffit</div>
+      </div>
+    </div>
+    <div class="build-step">
+      <span class="build-step-num">02</span>
+      <div>
+        <div class="build-step-title">Glass Doors</div>
+        <div class="build-step-sub">Accordion panels, dark aluminum frames, hardware</div>
+      </div>
+    </div>
+    <div class="build-step">
+      <span class="build-step-num">03</span>
+      <div>
+        <div class="build-step-title">Audio / Video</div>
+        <div class="build-step-sub">Flush speakers, display, lighting — all come alive</div>
+      </div>
+    </div>
+    <div class="build-step">
+      <span class="build-step-num">04</span>
+      <div>
+        <div class="build-step-title">Complete</div>
+        <div class="build-step-sub">Your outdoor space, fully realized</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <section class="services" id="services">
   <div class="wrap">
@@ -993,13 +977,9 @@
   (function initScrub(){
     var track = document.getElementById('scrubTrack');
     var video = document.getElementById('scrubVideo');
-    var bar   = document.getElementById('scrubBar');
     if(!track||!video){ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initScrub,{once:true});} return; }
-    var stops = [].slice.call(document.querySelectorAll('#scrubTrack .scrub-stop'));
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if(reduce){
-      stops.forEach(function(s){s.classList.add('live');});
-      if(bar)bar.style.width='100%';
       video.addEventListener('loadedmetadata',function(){try{video.currentTime=video.duration;}catch(e){}},{once:true});
       return;
     }
@@ -1025,11 +1005,6 @@
     function update(){
       var p=progress();
       var target=p*(duration||0);
-      if(bar)bar.style.width=(p*100).toFixed(2)+'%';
-      stops.forEach(function(el,i){
-        var threshold=i/stops.length;
-        el.classList.toggle('live',p>=threshold-0.02);
-      });
       if(duration&&!video.seeking){
         if(Math.abs(video.currentTime-target)>0.016){try{video.currentTime=target;}catch(e){}}
       }
@@ -1043,7 +1018,6 @@
       var img=document.createElement('img');
       img.src='poster.jpg';img.alt='';
       video.replaceWith(img);
-      stops.forEach(function(s){s.classList.add('live');});
     });
   })();
   const toggle = document.getElementById('menuToggle');
