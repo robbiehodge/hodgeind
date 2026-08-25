@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Furniture Orders | Hodge Industries</title>
+<title>Furniture Quotes | Hodge Industries</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#221f1b">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -282,7 +282,7 @@
       <a href="/#work">Our Work</a>
       <a href="/#about">About</a>
       <a href="/#contact">Contact</a>
-      <a href="/furniture.html" class="active">Furniture</a>
+      <a href="/furniture/" class="active">Furniture Quotes</a>
     </div>
     <div style="display:flex;align-items:center;gap:14px;">
       <a href="/#contact" class="btn nav-cta">Start a Project</a>
@@ -367,7 +367,6 @@ async function api(payload) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return await r.json();
     } else {
-      // POST with no-cors — Apps Script processes it, we can't read response
       await fetch(url.toString(), {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
@@ -384,10 +383,10 @@ async function api(payload) {
 async function loadOrder(id) {
   const r = await api({ action:'load', clientId: id });
   if (!r.ok) return null;
-  return { items: r.items || [], submitted: r.submitted || false };
+  return { items: r.items || [], submitted: r.submitted || false, contact: r.contact || {} };
 }
 async function saveOrder(id, data) {
-  return api({ action:'save', clientId: id, items: data.items, submitted: data.submitted });
+  return api({ action:'save', clientId: id, items: data.items, submitted: data.submitted, contact: data.contact || {} });
 }
 async function listClients() {
   const r = await api({ action:'listClients' });
@@ -404,6 +403,29 @@ function inp(name, val, placeholder, type) {
 function sel(name, val, options) {
   const opts = options.map(o => `<option${o===val?' selected':''}>${esc(o)}</option>`).join('');
   return `<select name="${name}"><option value="">— select —</option>${opts}</select>`;
+}
+
+/* ─── Contact block HTML ─────────────────────────────────────── */
+function contactBlockHTML(contact) {
+  return `
+  <div class="item-card" id="contactBlock" style="margin-bottom:20px;border-color:rgba(169,121,63,0.3);">
+    <div class="item-card-header" style="margin-bottom:14px;">
+      <span class="item-num">Your Info</span>
+    </div>
+    <div class="field-grid" style="grid-template-columns:1fr 1fr 1fr;gap:14px;">
+      ${fieldHTML('Full Name', inp('contact-name', contact.name, 'Jane Smith'), false)}
+      ${fieldHTML('Email', inp('contact-email', contact.email, 'jane@email.com', 'email'), false)}
+      ${fieldHTML('Phone', inp('contact-phone', contact.phone, '(704) 555-0100', 'tel'), false)}
+    </div>
+  </div>`;
+}
+
+function collectContact() {
+  return {
+    name:  (document.querySelector('[name="contact-name"]')  || {}).value || '',
+    email: (document.querySelector('[name="contact-email"]') || {}).value || '',
+    phone: (document.querySelector('[name="contact-phone"]') || {}).value || '',
+  };
 }
 
 /* ─── Item card ──────────────────────────────────────────────── */
@@ -450,7 +472,7 @@ function itemCardHTML(item, idx, isAdmin) {
 
 /* ─── Collect items from DOM ─────────────────────────────────── */
 function collectItems() {
-  return [...document.querySelectorAll('.item-card')].map(card => {
+  return [...document.querySelectorAll('.item-card[data-id]')].map(card => {
     const get = n => (card.querySelector(`[name="${n}"]`) || {}).value || '';
     return {
       id: card.dataset.id,
@@ -467,7 +489,7 @@ function collectItems() {
 function validateItems(items) {
   const errors = [];
   items.forEach((it, i) => {
-    if (!it.name.trim()) errors.push(`Item ${i+1}: name is required.`);
+    if (!it.name.trim()) errors.push(`Item ${i+1}: item name is required.`);
     if (parseInt(it.qty) < 1 || isNaN(parseInt(it.qty))) errors.push(`Item ${i+1}: quantity must be at least 1.`);
   });
   return errors;
@@ -489,23 +511,22 @@ function showStatus(state, text) {
 
 /* ─── Debounced auto-save ────────────────────────────────────── */
 let _debounce;
-function scheduleSave(id, getSubmitted) {
+function scheduleSave(id, getData) {
   clearTimeout(_debounce);
   showStatus('saving', 'Saving…');
   _debounce = setTimeout(async () => {
-    const items = collectItems();
-    const r = await saveOrder(id, { items, submitted: getSubmitted() });
+    const data = getData();
+    const r = await saveOrder(id, data);
     if (r && r.ok === false) {
       showStatus('error', 'Save failed — retrying…');
-      // Retry once after 3s
-      setTimeout(() => scheduleSave(id, getSubmitted), 3000);
+      setTimeout(() => scheduleSave(id, getData), 3000);
     } else {
       showStatus('saved', 'Saved ✓');
     }
   }, 1500);
 }
 
-/* ─── Spinner ────────────────────────────────────────────────── */
+/* ─── Spinner / error ────────────────────────────────────────── */
 function showSpinner(msg) {
   document.getElementById('app').innerHTML = `
     <div style="text-align:center;padding:80px 0;">
@@ -528,37 +549,68 @@ function showError(msg, retryFn) {
 
 /* ─── CLIENT VIEW ────────────────────────────────────────────── */
 async function renderClient() {
-  const id   = CLIENT_ID;
-  const name = cap(id);
+  const id    = CLIENT_ID;
+  const name  = cap(id);
+  // Read email from URL param (set on first visit from landing page)
+  const emailParam = decodeURIComponent(params.get('email') || '');
 
-  showSpinner('Loading your order…');
+  showSpinner('Loading your quote…');
 
   let data;
-  try {
-    data = await loadOrder(id);
-  } catch(e) {
-    showError('We couldn't load your order. Please check your connection and try again.', renderClient);
+  try { data = await loadOrder(id); }
+  catch(e) {
+    showError("We couldn't load your quote. Check your connection and try again.", renderClient);
     return;
   }
   if (!data) {
-    showError('We couldn't connect to the server. Please try refreshing the page.', renderClient);
+    showError("We couldn't connect to the server. Please try refreshing the page.", renderClient);
     return;
   }
 
-  // If previously submitted → fresh blank form. Old order is locked in the sheet.
+  const wasSubmitted = data.submitted;
   let submitted = false;
-  let items = (data.submitted || !data.items || !data.items.length)
+  let isDirty   = false;
+
+  let items = (wasSubmitted || !data.items || !data.items.length)
     ? [newItem()]
     : data.items;
 
-  function getSubmitted() { return submitted; }
+  // Pre-fill email from URL param on first visit; otherwise use saved contact
+  let contact = data.contact && data.contact.email
+    ? data.contact
+    : { ...( data.contact || {} ), email: emailParam };
+
+  // Canonical URL without the ?email= param (clean bookmark URL)
+  const cleanUrl = location.origin + location.pathname + '?id=' + id;
+
+  function getData() {
+    return { items: collectItems(), submitted, contact: collectContact() };
+  }
+
+  function scheduleClientSave() {
+    if (!isDirty) return;
+    scheduleSave(id, getData);
+  }
 
   function render() {
     const gt = orderTotal(items.filter(it => it.priceEach));
     document.getElementById('app').innerHTML = `
-      <div class="page-eyebrow">Furniture Order</div>
-      <h1 class="page-title" style="margin-bottom:14px;">${name}'s Order</h1>
-      <p class="page-sub">Add the items you'd like sourced below. Paste a reference link, add quantity and any specs. Your list <strong>saves automatically</strong> as you type — come back anytime from any device. Hit <strong>Submit for Quote</strong> when you're done.</p>
+
+      <!-- URL bookmark banner -->
+      <div style="background:rgba(169,121,63,0.08);border:1px solid rgba(169,121,63,0.25);border-radius:8px;
+                  padding:14px 18px;margin-bottom:32px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--brass);font-weight:600;margin-bottom:4px;">Your Personal Quote Link</div>
+          <div style="font-size:13px;color:rgba(246,243,238,0.6);word-break:break-all;">${esc(cleanUrl)}</div>
+        </div>
+        <button id="bannerCopyBtn" class="btn btn-outline" style="font-size:12px;padding:8px 16px;flex-shrink:0;">Copy &amp; Bookmark</button>
+      </div>
+
+      <div class="page-eyebrow">Quote Request</div>
+      <h1 class="page-title" style="margin-bottom:14px;">${name}'s Quote</h1>
+      <p class="page-sub">Add the items you'd like sourced below. Paste a reference link, add quantity and any specs. Your list <strong>saves automatically</strong> as you type — come back anytime from any device using the link above. Hit <strong>Submit for Quote</strong> when you're done.</p>
+
+      ${contactBlockHTML(contact)}
 
       <div class="items-list" id="itemsList">
         ${items.map((it,i) => itemCardHTML(it, i, false)).join('')}
@@ -587,21 +639,32 @@ async function renderClient() {
   }
 
   function attachClientEvents() {
-    // Auto-save on any input change
-    document.getElementById('itemsList').addEventListener('input',  () => scheduleSave(id, getSubmitted));
-    document.getElementById('itemsList').addEventListener('change', () => scheduleSave(id, getSubmitted));
+    // Banner copy button
+    document.getElementById('bannerCopyBtn').addEventListener('click', () => {
+      navigator.clipboard.writeText(cleanUrl).then(() => {
+        const b = document.getElementById('bannerCopyBtn');
+        b.textContent = 'Copied ✓';
+        setTimeout(() => { b.textContent = 'Copy & Bookmark'; }, 2000);
+      }).catch(() => { prompt('Copy your quote link:', cleanUrl); });
+    });
+
+    // Mark dirty and schedule save on any change
+    const markAndSave = () => { isDirty = true; scheduleClientSave(); };
+    document.getElementById('contactBlock').addEventListener('input', markAndSave);
+    document.getElementById('itemsList').addEventListener('input',  markAndSave);
+    document.getElementById('itemsList').addEventListener('change', markAndSave);
 
     // Remove item — confirm first
     document.querySelectorAll('[data-remove]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const card = btn.closest('.item-card');
-        const nameEl = card.querySelector('[name="name"]');
-        const itemName = nameEl && nameEl.value.trim() ? `"${nameEl.value.trim()}"` : 'this item';
-        if (!confirm(`Remove ${itemName}?`)) return;
+        const nameEl = btn.closest('.item-card').querySelector('[name="name"]');
+        const label  = nameEl && nameEl.value.trim() ? `"${nameEl.value.trim()}"` : 'this item';
+        if (!confirm(`Remove ${label}?`)) return;
         items = collectItems().filter(it => it.id !== btn.dataset.remove);
         if (!items.length) items = [newItem()];
         render();
-        scheduleSave(id, getSubmitted);
+        isDirty = true;
+        scheduleClientSave();
       });
     });
 
@@ -610,9 +673,10 @@ async function renderClient() {
       items = collectItems();
       items.push(newItem());
       render();
-      scheduleSave(id, getSubmitted);
+      isDirty = true;
+      scheduleClientSave();
       requestAnimationFrame(() => {
-        const last = document.querySelector('.item-card:last-child');
+        const last = document.querySelector('.item-card[data-id]:last-of-type');
         if (last) last.scrollIntoView({ behavior:'smooth', block:'start' });
       });
     });
@@ -620,11 +684,11 @@ async function renderClient() {
     // Manual save draft
     document.getElementById('saveBtn').addEventListener('click', async () => {
       clearTimeout(_debounce);
-      items = collectItems();
       const btn = document.getElementById('saveBtn');
       btn.textContent = 'Saving…'; btn.disabled = true;
       showStatus('saving', 'Saving…');
-      await saveOrder(id, { items, submitted });
+      isDirty = true;
+      await saveOrder(id, getData());
       showStatus('saved', 'Saved ✓');
       btn.textContent = 'Saved ✓';
       setTimeout(() => { btn.textContent = 'Save Draft'; btn.disabled = false; }, 2000);
@@ -633,6 +697,7 @@ async function renderClient() {
     // Submit for quote
     document.getElementById('submitBtn').addEventListener('click', async () => {
       items = collectItems();
+      contact = collectContact();
       const errors = validateItems(items);
       if (errors.length) { alert(errors.join('\n')); return; }
 
@@ -640,39 +705,45 @@ async function renderClient() {
       btn.textContent = 'Submitting…'; btn.disabled = true;
       document.getElementById('saveBtn').disabled = true;
 
-      // Cancel pending debounce and save immediately with submitted:true
       clearTimeout(_debounce);
       showStatus('saving', 'Saving…');
-      await saveOrder(id, { items, submitted: true });
+      await saveOrder(id, { items, submitted: true, contact });
       showStatus('saved', 'Saved ✓');
       submitted = true;
+      isDirty = false; // reset so returning doesn't re-save blank
 
-      // Notify via Netlify Forms — rich email with full item detail
+      // Netlify Forms notification — rich detail
       const summary = items.map((it,i) => [
         `Item ${i+1}: ${it.name}`,
         `  Qty: ${it.qty}`,
-        it.type  ? `  Type: ${it.type}`  : '',
-        it.url   ? `  URL: ${it.url}`    : '',
+        it.type  ? `  Type: ${it.type}`   : '',
+        it.url   ? `  URL: ${it.url}`     : '',
         it.notes ? `  Notes: ${it.notes}` : '',
       ].filter(Boolean).join('\n')).join('\n\n');
+
+      const contactLine = [
+        contact.name  ? `Name: ${contact.name}`   : '',
+        contact.email ? `Email: ${contact.email}` : '',
+        contact.phone ? `Phone: ${contact.phone}` : '',
+      ].filter(Boolean).join(' | ');
 
       const formData = new FormData();
       formData.append('form-name',  'furniture-order');
       formData.append('client',     name);
+      formData.append('contact',    contactLine);
       formData.append('order-url',  location.href);
       formData.append('item-count', String(items.length));
       formData.append('items',      summary);
       try { await fetch('/', { method: 'POST', body: formData }); }
       catch(e) { console.warn('Netlify notify failed', e); }
 
-      // Show success
       document.getElementById('app').innerHTML = `
         <div class="success-screen">
           <div class="success-banner">
             <div class="success-icon">✓</div>
-            <h2>Order Submitted!</h2>
-            <p>Robbie has been notified and will follow up with pricing. Your order is locked and saved. If you'd like to request additional items, use the button below — it will start a fresh order form.</p>
-            <button class="btn-back" onclick="location.reload()">＋ Add More Items</button>
+            <h2>Quote Submitted!</h2>
+            <p>Robbie has been notified and will follow up with pricing shortly. Your quote is locked and saved. If you'd like to request additional items, use the button below — it will start a fresh quote form.</p>
+            <button class="btn-back" onclick="location.reload()">＋ Request More Items</button>
           </div>
         </div>`;
     });
@@ -685,19 +756,19 @@ async function renderClient() {
 async function renderAdmin() {
 
   async function showList() {
-    showSpinner('Loading orders…');
+    showSpinner('Loading quotes…');
     let clients;
     try { clients = await listClients(); }
-    catch(e) { showError('Could not load orders. Check your connection.', showList); return; }
+    catch(e) { showError('Could not load quotes. Check your connection.', showList); return; }
 
     document.getElementById('app').innerHTML = `
       <div class="page-eyebrow">Admin</div>
-      <h1 class="page-title">All Orders</h1>
-      <p class="page-sub">Click an order to open it, fill in pricing, and update statuses.
+      <h1 class="page-title">All Quote Requests</h1>
+      <p class="page-sub">Click a quote to open it, fill in pricing, and update statuses.
         Share client links: <code style="background:rgba(246,243,238,0.08);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--brass-light);">hodge-ind.com/furniture/?id=firstname</code>
       </p>
       ${clients.length === 0
-        ? '<div style="text-align:center;padding:60px 0;color:rgba(246,243,238,0.3);">No orders yet.</div>'
+        ? '<div style="text-align:center;padding:60px 0;color:rgba(246,243,238,0.3);">No quotes yet.</div>'
         : `<div class="order-cards">${clients.map(c => `
             <div class="order-card" data-open="${esc(c.id)}">
               <div>
@@ -720,33 +791,40 @@ async function renderAdmin() {
   }
 
   async function showOrder(id) {
-    showSpinner('Loading order…');
+    showSpinner('Loading quote…');
     let data;
     try { data = await loadOrder(id); }
-    catch(e) { showError('Could not load this order.', () => showOrder(id)); return; }
+    catch(e) { showError('Could not load this quote.', () => showOrder(id)); return; }
 
-    let items = data?.items?.length ? data.items : [newItem()];
-    const name = cap(id);
+    let items   = data?.items?.length ? data.items : [newItem()];
+    let contact = data?.contact || {};
+    const name  = cap(id);
 
     function render() {
       const gt = orderTotal(items);
       document.getElementById('app').innerHTML = `
         <div style="margin-bottom:28px;">
-          <button class="btn btn-outline" id="backBtn" style="margin-bottom:20px;">← All Orders</button>
+          <button class="btn btn-outline" id="backBtn" style="margin-bottom:20px;">← All Quotes</button>
           <div class="page-eyebrow">Admin — Pricing</div>
-          <h1 class="page-title">${esc(name)}'s Order</h1>
-          <p class="page-sub" style="margin-bottom:0;">
+          <h1 class="page-title">${esc(name)}'s Quote</h1>
+          <p class="page-sub" style="margin-bottom:16px;">
             ${data?.submitted
               ? '<span style="color:var(--brass-light)">✓ Submitted — fill in pricing below and save.</span>'
               : 'Draft — client has not yet submitted.'}
           </p>
+          ${(contact.name||contact.email||contact.phone) ? `
+          <div style="background:rgba(246,243,238,0.04);border:1px solid var(--line-dark);border-radius:8px;padding:14px 18px;font-size:13px;color:rgba(246,243,238,0.6);display:flex;gap:24px;flex-wrap:wrap;">
+            ${contact.name  ? `<span>👤 ${esc(contact.name)}</span>`  : ''}
+            ${contact.email ? `<span>✉️ <a href="mailto:${esc(contact.email)}" style="color:var(--brass-light);">${esc(contact.email)}</a></span>` : ''}
+            ${contact.phone ? `<span>📞 <a href="tel:${esc(contact.phone)}" style="color:var(--brass-light);">${esc(contact.phone)}</a></span>` : ''}
+          </div>` : ''}
         </div>
         <div class="items-list" id="itemsList">
           ${items.map((it,i) => itemCardHTML(it, i, true)).join('')}
         </div>
         ${gt > 0 ? `
         <div class="totals-card">
-          <div class="totals-row"><span>Order Subtotal</span><span class="totals-main">${fmt(gt)}</span></div>
+          <div class="totals-row"><span>Quote Subtotal</span><span class="totals-main">${fmt(gt)}</span></div>
           <div class="totals-row"><span>50% Deposit</span><span class="totals-sub">${fmt(gt*0.5)}</span></div>
         </div>` : ''}
         <div class="actions">
@@ -755,7 +833,6 @@ async function renderAdmin() {
 
       document.getElementById('backBtn').addEventListener('click', showList);
 
-      // Admin remove — no confirm needed
       document.querySelectorAll('[data-remove]').forEach(btn => {
         btn.addEventListener('click', () => {
           items = collectItems().filter(it => it.id !== btn.dataset.remove);
@@ -765,12 +842,12 @@ async function renderAdmin() {
       });
 
       // Admin auto-save on pricing changes
-      document.getElementById('itemsList').addEventListener('input',  () => {
+      document.getElementById('itemsList').addEventListener('input', () => {
         clearTimeout(_debounce);
         showStatus('saving', 'Saving…');
         _debounce = setTimeout(async () => {
           items = collectItems();
-          await saveOrder(id, { ...data, items });
+          await saveOrder(id, { ...data, items, contact });
           showStatus('saved', 'Saved ✓');
         }, 1500);
       });
@@ -780,7 +857,7 @@ async function renderAdmin() {
         const btn = document.getElementById('savePricingBtn');
         btn.textContent = 'Saving…'; btn.disabled = true;
         showStatus('saving', 'Saving…');
-        await saveOrder(id, { ...data, items });
+        await saveOrder(id, { ...data, items, contact });
         showStatus('saved', 'Saved ✓');
         btn.textContent = 'Saved ✓';
         setTimeout(() => { btn.textContent = 'Save Pricing →'; btn.disabled = false; }, 2000);
@@ -796,17 +873,143 @@ async function renderAdmin() {
 /* ─── No-ID landing ──────────────────────────────────────────── */
 function renderLanding() {
   document.getElementById('app').innerHTML = `
-    <div class="landing">
-      <div class="page-eyebrow" style="justify-content:center;">Hodge Industries</div>
-      <h1 class="page-title">Furniture Orders</h1>
-      <p>You'll need a personalized link from Robbie to access your order form. Check your email or reach out to get your link.</p>
+    <div style="max-width:480px;margin:80px auto;padding:0 24px;">
+      <div class="page-eyebrow" style="justify-content:center;margin-bottom:20px;">Hodge Industries</div>
+      <h1 class="page-title" style="text-align:center;margin-bottom:12px;">Furniture Quotes</h1>
+      <p style="text-align:center;color:rgba(246,243,238,0.5);line-height:1.75;font-size:15px;margin-bottom:40px;">
+        Enter your email to get your personal quote link. Save it — you'll use it every time you come back.
+      </p>
+
+      <div style="background:rgba(246,243,238,0.04);border:1px solid var(--line-dark);border-radius:10px;padding:32px;">
+        <div class="field" style="margin-bottom:20px;">
+          <label>Your Email <span class="req">*</span></label>
+          <input id="landingEmail" type="email" placeholder="jane@email.com" autocomplete="email"
+            style="width:100%;background:rgba(22,21,18,0.6);border:1px solid var(--line-dark);border-radius:5px;
+                   color:var(--paper);font-size:16px;padding:12px 14px;outline:none;font-family:'Inter',sans-serif;
+                   transition:border-color 0.2s;"
+            oninput="this.style.borderColor='var(--brass)'"
+          >
+        </div>
+        <button id="landingBtn" class="btn btn-brass" style="width:100%;padding:14px;font-size:14px;font-weight:700;cursor:pointer;border-radius:5px;">
+          Get My Quote Link →
+        </button>
+        <p id="landingError" style="color:#e07070;font-size:13px;margin-top:12px;text-align:center;display:none;"></p>
+      </div>
+
+      <div id="landingResult" style="display:none;margin-top:24px;background:rgba(169,121,63,0.1);border:2px solid var(--brass);border-radius:10px;padding:28px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:12px;">✓</div>
+        <p style="font-size:14px;color:rgba(246,243,238,0.6);margin-bottom:8px;">Your personal quote link:</p>
+        <div id="landingUrl" style="font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--brass-light);
+             word-break:break-all;margin-bottom:20px;padding:10px;background:rgba(22,21,18,0.4);border-radius:5px;"></div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <button id="copyBtn" class="btn btn-outline" style="font-size:13px;">Copy Link</button>
+          <button id="goBtn" class="btn btn-brass" style="font-size:13px;">Open My Quote →</button>
+        </div>
+        <p style="font-size:12px;color:rgba(246,243,238,0.3);margin-top:16px;line-height:1.6;">
+          Bookmark this link or share it with anyone helping you pick items. It's yours — come back anytime.
+        </p>
+        <p id="emailNote" style="display:none;font-size:13px;color:var(--brass-light);margin-top:10px;"></p>
+      </div>
     </div>`;
+
+  const emailInput = document.getElementById('landingEmail');
+  const btn        = document.getElementById('landingBtn');
+  const errorEl    = document.getElementById('landingError');
+  const resultEl   = document.getElementById('landingResult');
+  const urlEl      = document.getElementById('landingUrl');
+  let generatedUrl = '';
+
+  emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+
+  btn.addEventListener('click', async () => {
+    const raw = emailInput.value.trim();
+    if (!raw || !raw.includes('@')) {
+      errorEl.textContent = 'Please enter a valid email address.';
+      errorEl.style.display = 'block';
+      emailInput.style.borderColor = '#e07070';
+      return;
+    }
+    errorEl.style.display = 'none';
+
+    // Take everything before the @, strip non-letters, max 20 chars
+    const prefix = raw.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+    if (!prefix) {
+      errorEl.textContent = 'Could not parse that email — please try again.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    const digits     = Math.floor(1000 + Math.random() * 9000);
+    const id         = prefix + digits;
+    // Store email in URL so we can pre-fill it on the form
+    generatedUrl = location.origin + location.pathname + '?id=' + id + '&email=' + encodeURIComponent(raw);
+
+    urlEl.textContent = generatedUrl;
+    resultEl.style.display = 'block';
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    emailInput.disabled = true;
+    btn.disabled = true;
+    btn.textContent = 'Sending your link…';
+
+    // Email them their link via Resend
+    try {
+      await fetch('/api/send-quote-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: raw, quoteUrl: generatedUrl }),
+      });
+    } catch(e) { console.warn('Email send failed', e); }
+
+    btn.textContent = 'Link Sent ✓';
+
+    // Show email confirmation note
+    const emailNote = document.getElementById('emailNote');
+    if (emailNote) {
+      emailNote.textContent = `We've also sent your link to ${raw}`;
+      emailNote.style.display = 'block';
+    }
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(generatedUrl).then(() => {
+      const copyBtn = document.getElementById('copyBtn');
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(() => { copyBtn.textContent = 'Copy Link'; }, 2000);
+    }).catch(() => { prompt('Copy your link:', generatedUrl); });
+  });
+
+  document.getElementById('goBtn').addEventListener('click', () => {
+    location.href = generatedUrl;
+  });
+}
+
+/* ─── localStorage helpers ───────────────────────────────────── */
+const LS_KEY = 'hodge_furniture_id';
+
+function saveIdLocally(id) {
+  try { localStorage.setItem(LS_KEY, id); } catch(e) {}
+}
+function getSavedId() {
+  try { return localStorage.getItem(LS_KEY) || ''; } catch(e) { return ''; }
 }
 
 /* ─── Boot ───────────────────────────────────────────────────── */
-if (IS_ADMIN)       renderAdmin();
-else if (CLIENT_ID) renderClient();
-else                renderLanding();
+if (IS_ADMIN) {
+  renderAdmin();
+} else if (CLIENT_ID) {
+  saveIdLocally(CLIENT_ID); // persist this session's ID
+  renderClient();
+} else {
+  // No ?id= in URL — check if they've been here before
+  const savedId = getSavedId();
+  if (savedId) {
+    // Redirect straight to their form — skip the landing page
+    location.replace(location.origin + location.pathname + '?id=' + savedId);
+  } else {
+    renderLanding();
+  }
+}
 </script>
 </body>
 </html>
