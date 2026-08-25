@@ -349,7 +349,7 @@
 <script>
 /* ─── Config ─────────────────────────────────────────────────── */
 const YOUR_EMAIL  = 'me@robbiehodge.com';
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxoTk_8FKE0WbmYQUwMP6sgvGc88gk0YrMPQTUKdA2W68C4zJSQrBQf9UjFq9ch_5A/exec';
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbympQHyFBjJxsDJailqRLfQTr_SCr7A9x1Pj01zRpL9SAWFhH0IGksqvDKXTfeUkZY/exec';
 const TYPE_OPTIONS   = ['Seating','Tables','Covers','Lighting','Decor','Storage','Other'];
 const STATUS_OPTIONS = ['Pending','Quoting','Quoted','In Stock','Temporarily Unavailable','Sold Out','Re-purchase Needed'];
 
@@ -379,22 +379,17 @@ const IS_ADMIN  = params.get('admin') === 'hodge2026';
 /* ─── Google Sheets API ──────────────────────────────────────── */
 async function api(payload) {
   try {
+    // Use GET for everything — avoids no-cors truncation on POST saves
     const url = new URL(BACKEND_URL);
     url.searchParams.set('action', payload.action);
     if (payload.clientId) url.searchParams.set('clientId', payload.clientId);
+    if (payload.items)    url.searchParams.set('items', JSON.stringify(payload.items));
+    if (payload.contact)  url.searchParams.set('contact', JSON.stringify(payload.contact));
+    if (payload.submitted !== undefined) url.searchParams.set('submitted', payload.submitted);
 
-    if (payload.action === 'load' || payload.action === 'listClients') {
-      const r = await fetch(url.toString());
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return await r.json();
-    } else {
-      await fetch(url.toString(), {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload),
-      });
-      return { ok: true };
-    }
+    const r = await fetch(url.toString());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
   } catch(e) {
     console.error('API error', e);
     return { ok: false, error: e.message };
@@ -406,8 +401,8 @@ async function loadOrder(id) {
   if (!r.ok) return null;
   return { items: r.items || [], submitted: r.submitted || false, contact: r.contact || {} };
 }
-async function saveOrder(id, data, isSubmit) {
-  return api({ action:'save', clientId: id, items: data.items, submitted: data.submitted, contact: data.contact || {}, isSubmit: isSubmit === true });
+async function saveOrder(id, data) {
+  return api({ action:'save', clientId: id, items: data.items, submitted: data.submitted, contact: data.contact || {} });
 }
 async function listClients() {
   const r = await api({ action:'listClients' });
@@ -588,13 +583,37 @@ async function renderClient() {
     return;
   }
 
-  const wasSubmitted = data.submitted;
+  // If already submitted — show locked read-only screen
+  if (data.submitted) {
+    const cleanUrl = location.origin + location.pathname + '?id=' + id;
+    document.getElementById('app').innerHTML = `
+      <div class="success-screen">
+        <div class="success-banner">
+          <div class="success-icon">✓</div>
+          <h2>Quote Submitted</h2>
+          <p>Your quote has been received and is locked. Robbie will follow up with pricing shortly.</p>
+          <p style="margin-top:12px;font-size:13px;color:rgba(246,243,238,0.4);">Need to add something? Reply to your confirmation email or contact Robbie directly.</p>
+        </div>
+        ${data.items && data.items.length ? `
+        <div style="margin-top:8px;">
+          <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--brass);font-weight:600;margin-bottom:16px;">Items Submitted</div>
+          ${data.items.map((it,i) => `
+            <div style="padding:14px 0;border-bottom:1px solid var(--line-dark);display:flex;gap:16px;align-items:flex-start;">
+              <span style="font-size:11px;color:var(--brass);font-weight:600;flex-shrink:0;width:20px;">${i+1}</span>
+              <div>
+                <div style="font-size:14px;color:var(--paper);margin-bottom:2px;">${esc(it.name)}</div>
+                <div style="font-size:12px;color:rgba(246,243,238,0.4);">Qty: ${it.qty}${it.type ? ' · ' + esc(it.type) : ''}${it.notes ? ' · ' + esc(it.notes) : ''}</div>
+                ${it.url ? `<div style="margin-top:4px;"><a href="${esc(it.url)}" target="_blank" style="font-size:11px;color:var(--brass-light);">↗ View Item</a></div>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    return;
+  }
+
   let submitted = false;
   let isDirty   = false;
-
-  let items = (wasSubmitted || !data.items || !data.items.length)
-    ? [newItem()]
-    : data.items;
+  let items     = data.items && data.items.length ? data.items : [newItem()];
 
   // Pre-fill email from URL param on first visit; otherwise use saved contact
   let contact = data.contact && data.contact.email
@@ -756,7 +775,7 @@ async function renderClient() {
       btn.textContent = 'Saving…'; btn.disabled = true;
       showStatus('saving', 'Saving…');
       isDirty = true;
-      await saveOrder(id, getData(), false);
+      await saveOrder(id, getData());
       showStatus('saved', 'Saved ✓');
       btn.textContent = 'Saved ✓';
       setTimeout(() => { btn.textContent = 'Save Draft'; btn.disabled = false; }, 2000);
@@ -775,7 +794,7 @@ async function renderClient() {
 
       clearTimeout(_debounce);
       showStatus('saving', 'Saving…');
-      await saveOrder(id, { items, submitted: true, contact }, true);
+      await saveOrder(id, { items, submitted: true, contact });
       showStatus('saved', 'Saved ✓');
       submitted = true;
       isDirty = false; // reset so returning doesn't re-save blank
@@ -810,8 +829,7 @@ async function renderClient() {
           <div class="success-banner">
             <div class="success-icon">✓</div>
             <h2>Quote Submitted!</h2>
-            <p>Robbie has been notified and will follow up with pricing shortly. Your quote is locked and saved. If you'd like to request additional items, use the button below — it will start a fresh quote form.</p>
-            <button class="btn-back" onclick="location.reload()">＋ Request More Items</button>
+            <p>Robbie has been notified and will follow up with pricing shortly. Your quote is locked — if you need to add anything, reply to your confirmation email or contact Robbie directly.</p>
           </div>
         </div>`;
     });
