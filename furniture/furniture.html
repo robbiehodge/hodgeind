@@ -311,15 +311,7 @@
   </nav>
 </header>
 
-<!-- Hidden Netlify form — required for Netlify to detect and process submissions -->
-<form name="furniture-order" data-netlify="true" netlify-honeypot="bot-field" hidden>
-  <input type="hidden" name="form-name" value="furniture-order">
-  <input name="client">
-  <input name="contact">
-  <input name="order-url">
-  <input name="item-count">
-  <textarea name="items"></textarea>
-</form>
+<!-- Resend handles all email notifications via /api/* functions -->
 
 <div id="app" class="page-wrap">
   <!-- Rendered by JS below -->
@@ -349,7 +341,7 @@
 <script>
 /* ─── Config ─────────────────────────────────────────────────── */
 const YOUR_EMAIL  = 'me@robbiehodge.com';
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbympQHyFBjJxsDJailqRLfQTr_SCr7A9x1Pj01zRpL9SAWFhH0IGksqvDKXTfeUkZY/exec';
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyHVeLKL183rjpsJwMqOfWMOylLGWxwUEhh80PA-4Tta01SmmPqwuF25nUVxNMzRnBL/exec';
 const TYPE_OPTIONS   = ['Seating','Tables','Covers','Lighting','Decor','Storage','Other'];
 const STATUS_OPTIONS = ['Pending','Quoting','Quoted','In Stock','Temporarily Unavailable','Sold Out','Re-purchase Needed'];
 
@@ -799,30 +791,19 @@ async function renderClient() {
       submitted = true;
       isDirty = false; // reset so returning doesn't re-save blank
 
-      // Netlify Forms notification — rich detail
-      const summary = items.map((it,i) => [
-        `Item ${i+1}: ${it.name}`,
-        `  Qty: ${it.qty}`,
-        it.type  ? `  Type: ${it.type}`   : '',
-        it.url   ? `  URL: ${it.url}`     : '',
-        it.notes ? `  Notes: ${it.notes}` : '',
-      ].filter(Boolean).join('\n')).join('\n\n');
-
-      const contactLine = [
-        contact.name  ? `Name: ${contact.name}`   : '',
-        contact.email ? `Email: ${contact.email}` : '',
-        contact.phone ? `Phone: ${contact.phone}` : '',
-      ].filter(Boolean).join(' | ');
-
-      const formData = new FormData();
-      formData.append('form-name',  'furniture-order');
-      formData.append('client',     name);
-      formData.append('contact',    contactLine);
-      formData.append('order-url',  location.href);
-      formData.append('item-count', String(items.length));
-      formData.append('items',      summary);
-      try { await fetch('/', { method: 'POST', body: formData }); }
-      catch(e) { console.warn('Netlify notify failed', e); }
+      // Notify Robbie via Resend
+      try {
+        await fetch('/api/notify-quote-submitted', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientId: id,
+            contact,
+            items,
+            quoteUrl: cleanUrl,
+          }),
+        });
+      } catch(e) { console.warn('Submit notify failed', e); }
 
       document.getElementById('app').innerHTML = `
         <div class="success-screen">
@@ -1046,6 +1027,15 @@ function renderLanding() {
         body: JSON.stringify({ email: raw, quoteUrl: generatedUrl }),
       });
     } catch(e) { console.warn('Email send failed', e); }
+
+    // Notify Robbie of new client
+    try {
+      await fetch('/api/notify-new-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: raw, quoteUrl: generatedUrl, clientId: id }),
+      });
+    } catch(e) { console.warn('New client notify failed', e); }
 
     btn.textContent = 'Link Sent ✓';
 
