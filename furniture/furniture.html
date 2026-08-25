@@ -279,7 +279,9 @@
 
 <script>
 /* ─── Config ─────────────────────────────────────────────────── */
-const YOUR_EMAIL = 'me@robbiehodge.com';
+const YOUR_EMAIL   = 'me@robbiehodge.com';
+// ⬇ Paste your Apps Script Web App URL here after deploying
+const BACKEND_URL  = 'https://script.google.com/macros/s/AKfycbzP-r9Nk48aruNpvOZrxw6ghp7sB9E5AswGg1rxy0SjGJvto03SU6zhJOpaYj1C1_gB/exec';
 const TYPE_OPTIONS   = ['Seating','Tables','Covers','Lighting','Decor','Storage','Other'];
 const STATUS_OPTIONS = ['Pending','Quoting','Quoted','In Stock','Temporarily Unavailable','Sold Out','Re-purchase Needed'];
 
@@ -310,17 +312,30 @@ const params  = new URLSearchParams(location.search);
 const CLIENT_ID = (params.get('id') || '').toLowerCase().trim();
 const IS_ADMIN  = params.get('admin') === '1';
 
-/* ─── Storage ────────────────────────────────────────────────── */
+/* ─── Google Sheets API ──────────────────────────────────────── */
+async function api(payload) {
+  try {
+    const r = await fetch(BACKEND_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return await r.json();
+  } catch(e) {
+    console.error('API error', e);
+    return { ok: false, error: e.message };
+  }
+}
 async function loadOrder(id) {
-  try { const r = await window.storage.get('order:'+id); return r ? JSON.parse(r.value) : null; }
-  catch { return null; }
+  const r = await api({ action:'load', clientId: id });
+  if (!r.ok) return null;
+  return { items: r.items, submitted: r.submitted };
 }
 async function saveOrder(id, data) {
-  try { await window.storage.set('order:'+id, JSON.stringify(data)); } catch(e) { console.error(e); }
+  await api({ action:'save', clientId: id, items: data.items, submitted: data.submitted });
 }
-async function listOrders() {
-  try { const r = await window.storage.list('order:'); return r ? r.keys : []; }
-  catch { return []; }
+async function listClients() {
+  const r = await api({ action:'listClients' });
+  return r.ok ? r.clients : [];
 }
 
 /* ─── Render helpers ─────────────────────────────────────────── */
@@ -507,34 +522,28 @@ async function renderClient() {
 /* ─── ADMIN VIEW ─────────────────────────────────────────────── */
 async function renderAdmin() {
   async function showList() {
-    const keys   = await listOrders();
-    const orders = await Promise.all(keys.map(async k => {
-      const id   = k.replace('order:','');
-      const data = await loadOrder(id);
-      return { id, data };
-    }));
-    const valid = orders.filter(o => o.data);
+    document.getElementById('app').innerHTML = `<div style="text-align:center;padding:60px 0;color:rgba(246,243,238,0.3);">Loading orders…</div>`;
+    const clients = await listClients();
 
     document.getElementById('app').innerHTML = `
       <div class="page-eyebrow">Admin</div>
       <h1 class="page-title">All Orders</h1>
       <p class="page-sub">Click an order to open it, fill in pricing, and update statuses.
-        Share client links as: <code style="background:rgba(246,243,238,0.08);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--brass-light);">hodge-ind.com/furniture.html?id=firstname</code></p>
+        Share client links as: <code style="background:rgba(246,243,238,0.08);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--brass-light);">hodge-ind.com/furniture/?id=firstname</code></p>
 
-      ${valid.length === 0
+      ${clients.length === 0
         ? '<div style="text-align:center;padding:60px 0;color:rgba(246,243,238,0.3);">No orders yet.</div>'
-        : `<div class="order-cards">${valid.map(o => {
-            const gt = orderTotal(o.data.items||[]);
-            return `<div class="order-card" data-open="${o.id}">
+        : `<div class="order-cards">${clients.map(c => {
+            return `<div class="order-card" data-open="${c.id}">
               <div>
-                <div class="order-card-name">${cap(o.id)}</div>
+                <div class="order-card-name">${c.name}</div>
                 <div class="order-card-meta">
-                  ${(o.data.items||[]).length} item${o.data.items?.length!==1?'s':''}
-                  ${o.data.submitted ? ' · <span style="color:var(--brass-light)">Submitted</span>' : ' · Draft'}
+                  ${c.itemCount} item${c.itemCount!==1?'s':''}
+                  ${c.submitted ? ' · <span style="color:var(--brass-light)">Submitted</span>' : ' · Draft'}
                 </div>
               </div>
               <div class="order-card-total">
-                ${gt > 0 ? `<div class="amt">${fmt(gt)}</div><div class="lbl">subtotal</div>` : '<div class="lbl" style="margin-top:0;">Not yet priced</div>'}
+                ${c.total > 0 ? `<div class="amt">${fmt(c.total)}</div><div class="lbl">subtotal</div>` : '<div class="lbl" style="margin-top:0;">Not yet priced</div>'}
               </div>
             </div>`;
           }).join('')}</div>`}
