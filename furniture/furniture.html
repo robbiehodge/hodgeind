@@ -159,12 +159,13 @@
 
   /* ── Add item button ── */
   .add-btn{
-    width:100%;padding:14px;background:none;
-    border:1px dashed var(--line-dark);border-radius:8px;
-    color:rgba(246,243,238,0.35);font-size:13.5px;cursor:pointer;
+    width:100%;padding:16px;background:rgba(169,121,63,0.08);
+    border:1px dashed rgba(169,121,63,0.5);border-radius:8px;
+    color:var(--brass-light);font-size:14px;font-weight:600;cursor:pointer;
     font-family:'Inter',sans-serif;transition:all 0.2s;margin-bottom:32px;
+    letter-spacing:0.02em;
   }
-  .add-btn:hover{border-color:var(--brass);color:var(--brass);}
+  .add-btn:hover{background:rgba(169,121,63,0.16);border-color:var(--brass-light);}
 
   /* ── Totals ── */
   .totals-card{
@@ -181,18 +182,35 @@
   /* ── Actions ── */
   .actions{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;}
 
-  /* ── Success screen ── */
   .success-screen{
-    max-width:520px;margin:80px auto;text-align:center;padding:0 24px;
+    max-width:600px;margin:48px auto;padding:0 24px;
+  }
+  .success-banner{
+    background:rgba(169,121,63,0.15);
+    border:2px solid var(--brass);
+    border-radius:12px;
+    padding:40px 40px 36px;
+    text-align:center;
+    margin-bottom:32px;
   }
   .success-icon{
-    width:64px;height:64px;border-radius:50%;
-    background:rgba(169,121,63,0.15);border:1px solid rgba(169,121,63,0.4);
+    width:72px;height:72px;border-radius:50%;
+    background:var(--brass);
     display:flex;align-items:center;justify-content:center;
-    margin:0 auto 24px;font-size:28px;
+    margin:0 auto 24px;font-size:32px;color:var(--charcoal);
+    font-weight:700;
   }
-  .success-screen h2{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:500;margin-bottom:14px;}
-  .success-screen p{color:rgba(246,243,238,0.55);line-height:1.75;font-size:15px;}
+  .success-screen h2{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:500;margin-bottom:14px;color:var(--paper);}
+  .success-screen p{color:rgba(246,243,238,0.65);line-height:1.8;font-size:15px;margin-bottom:28px;}
+  .btn-back{
+    display:inline-block;padding:14px 36px;
+    background:var(--brass);color:var(--paper)!important;
+    border:2px solid var(--brass);border-radius:6px;
+    font-size:14px;font-weight:700;letter-spacing:0.04em;
+    text-decoration:none;cursor:pointer;font-family:'Inter',sans-serif;
+    transition:all 0.2s;
+  }
+  .btn-back:hover{background:var(--brass-light);border-color:var(--brass-light);}
 
   /* ── Admin list ── */
   .order-cards{display:flex;flex-direction:column;gap:12px;}
@@ -212,7 +230,26 @@
   .landing{max-width:480px;margin:100px auto;text-align:center;padding:0 24px;}
   .landing p{color:rgba(246,243,238,0.5);line-height:1.75;font-size:15px;}
 
-  /* ── Footer ── */
+  /* ── Save status indicator ── */
+  #saveStatus{
+    position:fixed;bottom:24px;right:24px;
+    display:flex;align-items:center;gap:8px;
+    background:var(--charcoal-2);border:1px solid var(--line-dark);
+    border-radius:20px;padding:8px 16px;
+    font-size:12px;color:rgba(246,243,238,0.5);
+    opacity:0;transition:opacity 0.3s ease;
+    z-index:300;pointer-events:none;
+  }
+  #saveStatus.visible{opacity:1;}
+  #saveStatus.saving{color:rgba(246,243,238,0.5);}
+  #saveStatus.saved{color:var(--brass-light);border-color:rgba(169,121,63,0.3);}
+  #saveStatus.error{color:#e07070;border-color:rgba(224,112,112,0.3);}
+  .status-dot{
+    width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;
+  }
+  #saveStatus.saving .status-dot{animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:0.3;}50%{opacity:1;}}
+  @media(max-width:860px){#saveStatus{bottom:80px;}}
   footer{background:var(--charcoal);border-top:1px solid var(--line-dark);}
   footer .wrap{max-width:var(--max);margin:0 auto;padding:28px 32px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;}
   footer p{font-size:12.5px;color:rgba(246,243,238,0.5);}
@@ -254,6 +291,15 @@
   </nav>
 </header>
 
+<!-- Hidden Netlify form — required for Netlify to detect and process submissions -->
+<form name="furniture-order" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="hidden" name="form-name" value="furniture-order">
+  <input name="client">
+  <input name="order-url">
+  <input name="item-count">
+  <textarea name="items"></textarea>
+</form>
+
 <div id="app" class="page-wrap">
   <!-- Rendered by JS below -->
   <div style="text-align:center;padding:80px 0;color:rgba(246,243,238,0.3);">Loading…</div>
@@ -271,6 +317,8 @@
     </div>
   </div>
 </footer>
+
+<div id="saveStatus"><span class="status-dot"></span><span id="saveStatusText">Saving…</span></div>
 
 <div class="mobile-cta-bar" id="mobileCta">
   <a href="tel:+17046298677" class="call">Call</a>
@@ -411,14 +459,30 @@ function collectItems() {
   });
 }
 
-/* ─── Auto-save ──────────────────────────────────────────────── */
-let _autoSave;
-function startAutoSave(id, getSubmitted) {
-  clearInterval(_autoSave);
-  _autoSave = setInterval(async () => {
+/* ─── Save status indicator ──────────────────────────────────── */
+const statusEl   = document.getElementById('saveStatus');
+const statusText = document.getElementById('saveStatusText');
+let hideTimer;
+
+function showStatus(state, text) {
+  statusEl.className = 'visible ' + state;
+  statusText.textContent = text;
+  clearTimeout(hideTimer);
+  if (state === 'saved') {
+    hideTimer = setTimeout(() => { statusEl.className = ''; }, 3000);
+  }
+}
+
+/* ─── Debounced auto-save ────────────────────────────────────── */
+let _debounce;
+function scheduleSave(id, getSubmitted) {
+  clearTimeout(_debounce);
+  showStatus('saving', 'Saving…');
+  _debounce = setTimeout(async () => {
     const items = collectItems();
     await saveOrder(id, { items, submitted: getSubmitted() });
-  }, 30000);
+    showStatus('saved', 'Saved ✓');
+  }, 1500);
 }
 
 /* ─── CLIENT VIEW ────────────────────────────────────────────── */
@@ -473,12 +537,17 @@ async function renderClient() {
   }
 
   function attachClientEvents() {
+    // Trigger save on any input change
+    document.getElementById('itemsList').addEventListener('input', () => scheduleSave(id, getSubmitted));
+    document.getElementById('itemsList').addEventListener('change', () => scheduleSave(id, getSubmitted));
+
     // Remove item
     document.querySelectorAll('[data-remove]').forEach(btn => {
       btn.addEventListener('click', () => {
         items = collectItems().filter(it => it.id !== btn.dataset.remove);
         if (!items.length) items = [newItem()];
         render();
+        scheduleSave(id, getSubmitted);
       });
     });
 
@@ -487,6 +556,7 @@ async function renderClient() {
       items = collectItems();
       items.push(newItem());
       render();
+      scheduleSave(id, getSubmitted);
       document.querySelector('.item-card:last-child').scrollIntoView({ behavior:'smooth', block:'start' });
     });
 
@@ -509,29 +579,33 @@ async function renderClient() {
       submitted = true;
       await saveOrder(id, { items, submitted: true });
 
-      // Build mailto
-      const lines = items.map((it,i) =>
-        `Item ${i+1}: ${it.name}\n  Qty: ${it.qty}\n  URL: ${it.url||'—'}\n  Type: ${it.type||'—'}\n  Notes: ${it.notes||'—'}`
-      ).join('\n\n');
-      const body    = encodeURIComponent(`Hi Robbie,\n\n${name} has submitted their furniture order.\n\n---\n\n${lines}\n\n---\n\nView full order: ${location.href}`);
-      const subject = encodeURIComponent(`Furniture Quote Request — ${name}`);
-      window.open(`mailto:${YOUR_EMAIL}?subject=${subject}&body=${body}`);
+      // Submit to Netlify Forms — triggers email notification to Robbie
+      const summary = items.map((it,i) =>
+        `Item ${i+1}: ${it.name} | Qty: ${it.qty}${it.url ? ' | ' + it.url : ''}${it.notes ? ' | ' + it.notes : ''}`
+      ).join('\n');
+      const formData = new FormData();
+      formData.append('form-name',  'furniture-order');
+      formData.append('client',     name);
+      formData.append('order-url',  location.href);
+      formData.append('item-count', String(items.length));
+      formData.append('items',      summary);
+      try { await fetch('/', { method: 'POST', body: formData }); }
+      catch(e) { console.warn('Netlify form post failed', e); }
 
       // Show success
       document.getElementById('app').innerHTML = `
         <div class="success-screen">
-          <div class="success-icon">✓</div>
-          <h2>Order Submitted</h2>
-          <p>Robbie has been notified and will follow up with pricing shortly. Your order is saved — return to this link anytime to check for updates or add more items.</p>
-          <div style="margin-top:28px;">
-            <button class="btn btn-outline" onclick="location.reload()">Back to My Order</button>
+          <div class="success-banner">
+            <div class="success-icon">✓</div>
+            <h2>Order Submitted!</h2>
+            <p>Robbie has been notified and will follow up with pricing shortly. Your order is saved — return to this link anytime to check for updates or add more items.</p>
+            <button class="btn-back" onclick="location.reload()">← Back to My Order</button>
           </div>
         </div>`;
     });
   }
 
   render();
-  startAutoSave(id, getSubmitted);
 }
 
 /* ─── ADMIN VIEW ─────────────────────────────────────────────── */
