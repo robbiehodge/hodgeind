@@ -796,14 +796,25 @@ async function renderClient() {
         await fetch('/api/notify-quote-submitted', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            clientId: id,
-            contact,
-            items,
-            quoteUrl: cleanUrl,
-          }),
+          body: JSON.stringify({ clientId: id, contact, items, quoteUrl: cleanUrl }),
         });
       } catch(e) { console.warn('Submit notify failed', e); }
+
+      // Send client confirmation email
+      if (contact.email) {
+        try {
+          await fetch('/api/confirm-quote-submitted', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email:    contact.email,
+              name:     contact.name || '',
+              items,
+              quoteUrl: cleanUrl,
+            }),
+          });
+        } catch(e) { console.warn('Client confirm failed', e); }
+      }
 
       document.getElementById('app').innerHTML = `
         <div class="success-screen">
@@ -1077,10 +1088,13 @@ if (IS_ADMIN) {
   saveIdLocally(CLIENT_ID); // persist this session's ID
   renderClient();
 } else {
+  // ?reset=1 clears saved ID — useful for testing
+  if (params.get('reset') === '1') {
+    try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  }
   // No ?id= in URL — check if they've been here before
   const savedId = getSavedId();
   if (savedId) {
-    // Redirect straight to their form — skip the landing page
     location.replace(location.origin + location.pathname + '?id=' + savedId);
   } else {
     renderLanding();
