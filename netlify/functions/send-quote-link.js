@@ -30,7 +30,7 @@ export default async (req) => {
         'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Hodge Industries <quotes@hodge-ind.com>',
+        from: 'Hodge Industries <admin@hodge-ind.com>',
         to: [email],
         subject: 'Your Hodge Industries Furniture Quote Link',
         html: `
