@@ -18,7 +18,7 @@ export default async (req) => {
       },
       body: JSON.stringify({
         from: 'Hodge Industries <admin@hodge-ind.com>',
-        to: ['taldir@gmail.com'],
+        to: ['admin@hodge-ind.com'],
         reply_to: email,
         subject: `New Quote Started — ${email}`,
         html: `

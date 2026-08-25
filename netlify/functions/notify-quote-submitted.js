@@ -32,7 +32,7 @@ export default async (req) => {
       },
       body: JSON.stringify({
         from: 'Hodge Industries <admin@hodge-ind.com>',
-        to: ['taldir@gmail.com'],
+        to: ['admin@hodge-ind.com'],
         reply_to: email !== '—' ? email : undefined,
         subject: `New Quote Submitted — ${name} (${itemCount} item${itemCount !== 1 ? 's' : ''})`,
         html: `
