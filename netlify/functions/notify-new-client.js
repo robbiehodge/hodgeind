@@ -1,5 +1,5 @@
 // netlify/functions/notify-new-client.js
-// Sends Robbie an internal alert when a new client generates their quote link
+// Alerts Robbie when a new client generates their quote link
 
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -14,7 +14,7 @@ export default async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Authorization': `Bearer ${Netlify.env.get('RESEND_API_KEY')}`,
       },
       body: JSON.stringify({
         from: 'Hodge Industries <admin@hodge-ind.com>',
@@ -29,12 +29,10 @@ export default async (req) => {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f3ee;padding:40px 20px;">
     <tr><td align="center">
       <table width="520" cellpadding="0" cellspacing="0" style="background:#221f1b;border-radius:10px;overflow:hidden;">
-
         <tr><td style="padding:28px 36px 20px;border-bottom:1px solid rgba(246,243,238,0.1);">
           <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#c99a5f;font-weight:600;">Hodge Industries · Internal</p>
           <h1 style="margin:0;font-family:Georgia,serif;font-size:24px;font-weight:500;color:#f6f3ee;">New Client Started a Quote</h1>
         </td></tr>
-
         <tr><td style="padding:28px 36px;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(169,121,63,0.1);border:1px solid rgba(169,121,63,0.3);border-radius:8px;margin-bottom:24px;">
             <tr>
@@ -48,24 +46,18 @@ export default async (req) => {
               </td>
             </tr>
           </table>
-
           <p style="margin:0 0 20px;font-size:14px;color:rgba(246,243,238,0.6);line-height:1.7;">
-            They've received their quote link and have started browsing. No action needed yet — you'll get another notification when they submit.
+            They've received their quote link. No action needed yet — you'll get another notification when they submit.
           </p>
-
           <table cellpadding="0" cellspacing="0">
             <tr><td style="background:#a9793f;border-radius:5px;">
-              <a href="${quoteUrl}" style="display:inline-block;padding:12px 24px;font-size:13px;font-weight:700;color:#221f1b;text-decoration:none;">
-                View Their Quote Link →
-              </a>
+              <a href="${quoteUrl}" style="display:inline-block;padding:12px 24px;font-size:13px;font-weight:700;color:#221f1b;text-decoration:none;">View Their Quote Link →</a>
             </td></tr>
           </table>
         </td></tr>
-
         <tr><td style="padding:16px 36px;border-top:1px solid rgba(246,243,238,0.08);">
           <p style="margin:0;font-size:11px;color:rgba(246,243,238,0.3);">Hodge Industries · admin@hodge-ind.com</p>
         </td></tr>
-
       </table>
     </td></tr>
   </table>
