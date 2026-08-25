@@ -1027,6 +1027,14 @@ function renderLanding() {
   const urlEl      = document.getElementById('landingUrl');
   let generatedUrl = '';
 
+  // Set video source now that the element exists in the DOM
+  const sizzleVid = document.querySelector('.hodge-hero video');
+  if (sizzleVid) {
+    sizzleVid.src = window.matchMedia('(max-width: 768px)').matches
+      ? sizzleVid.dataset.mobile
+      : sizzleVid.dataset.desktop;
+  }
+
   emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
 
   btn.addEventListener('click', async () => {
@@ -1110,12 +1118,6 @@ function saveIdLocally(id) {
 function getSavedId() {
   try { return localStorage.getItem(LS_KEY) || ''; } catch(e) { return ''; }
 }
-
-  /* ── Sizzle reel source picker ── */
-  document.querySelectorAll('.hodge-hero video').forEach(function(v) {
-    var small = window.matchMedia('(max-width: 768px)').matches;
-    v.src = small ? v.dataset.mobile : v.dataset.desktop;
-  });
 
 /* ─── Boot ───────────────────────────────────────────────────── */
 if (IS_ADMIN) {
