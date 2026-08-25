@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Furniture Orders | Hodge Industries</title>
+<title>Furniture Quotes | Hodge Industries</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#221f1b">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -159,12 +159,13 @@
 
   /* ── Add item button ── */
   .add-btn{
-    width:100%;padding:14px;background:none;
-    border:1px dashed var(--line-dark);border-radius:8px;
-    color:rgba(246,243,238,0.35);font-size:13.5px;cursor:pointer;
+    width:100%;padding:16px;background:rgba(169,121,63,0.08);
+    border:1px dashed rgba(169,121,63,0.5);border-radius:8px;
+    color:var(--brass-light);font-size:14px;font-weight:600;cursor:pointer;
     font-family:'Inter',sans-serif;transition:all 0.2s;margin-bottom:32px;
+    letter-spacing:0.02em;
   }
-  .add-btn:hover{border-color:var(--brass);color:var(--brass);}
+  .add-btn:hover{background:rgba(169,121,63,0.16);border-color:var(--brass-light);}
 
   /* ── Totals ── */
   .totals-card{
@@ -181,18 +182,35 @@
   /* ── Actions ── */
   .actions{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;}
 
-  /* ── Success screen ── */
   .success-screen{
-    max-width:520px;margin:80px auto;text-align:center;padding:0 24px;
+    max-width:600px;margin:48px auto;padding:0 24px;
+  }
+  .success-banner{
+    background:rgba(169,121,63,0.15);
+    border:2px solid var(--brass);
+    border-radius:12px;
+    padding:40px 40px 36px;
+    text-align:center;
+    margin-bottom:32px;
   }
   .success-icon{
-    width:64px;height:64px;border-radius:50%;
-    background:rgba(169,121,63,0.15);border:1px solid rgba(169,121,63,0.4);
+    width:72px;height:72px;border-radius:50%;
+    background:var(--brass);
     display:flex;align-items:center;justify-content:center;
-    margin:0 auto 24px;font-size:28px;
+    margin:0 auto 24px;font-size:32px;color:var(--charcoal);
+    font-weight:700;
   }
-  .success-screen h2{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:500;margin-bottom:14px;}
-  .success-screen p{color:rgba(246,243,238,0.55);line-height:1.75;font-size:15px;}
+  .success-screen h2{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:500;margin-bottom:14px;color:var(--paper);}
+  .success-screen p{color:rgba(246,243,238,0.65);line-height:1.8;font-size:15px;margin-bottom:28px;}
+  .btn-back{
+    display:inline-block;padding:14px 36px;
+    background:var(--brass);color:var(--paper)!important;
+    border:2px solid var(--brass);border-radius:6px;
+    font-size:14px;font-weight:700;letter-spacing:0.04em;
+    text-decoration:none;cursor:pointer;font-family:'Inter',sans-serif;
+    transition:all 0.2s;
+  }
+  .btn-back:hover{background:var(--brass-light);border-color:var(--brass-light);}
 
   /* ── Admin list ── */
   .order-cards{display:flex;flex-direction:column;gap:12px;}
@@ -212,7 +230,67 @@
   .landing{max-width:480px;margin:100px auto;text-align:center;padding:0 24px;}
   .landing p{color:rgba(246,243,238,0.5);line-height:1.75;font-size:15px;}
 
-  /* ── Footer ── */
+  /* ── Countdown timer ── */
+  .cd-block{
+    display:inline-flex;flex-direction:column;align-items:center;
+    background:rgba(22,21,18,0.5);border:1px solid var(--line-dark);
+    border-radius:6px;padding:10px 16px;min-width:72px;
+  }
+  .cd-num{
+    font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:500;
+    color:var(--paper);line-height:1;margin-bottom:4px;
+  }
+  .cd-label{
+    font-size:9px;letter-spacing:0.18em;text-transform:uppercase;
+    color:rgba(246,243,238,0.35);font-weight:600;
+  }
+  .cd-sep{
+    font-family:'Cormorant Garamond',serif;font-size:28px;
+    color:rgba(246,243,238,0.2);align-self:center;padding:0 2px;
+  }
+  @media(max-width:480px){.cd-num{font-size:26px;}.cd-block{min-width:56px;padding:8px 10px;}}
+
+  /* ── Sizzle reel ── */
+  .hodge-hero {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #1c1a17;
+    border-radius: 10px;
+    margin-top: 28px;
+  }
+  .hodge-hero video {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hodge-hero video { display: none; }
+    .hodge-hero {
+      background: #1c1a17 url("/media/hodge-sizzle-poster.jpg") center / cover no-repeat;
+    }
+  }
+
+  /* ── Save status indicator ── */
+  #saveStatus{
+    position:fixed;bottom:24px;right:24px;
+    display:flex;align-items:center;gap:8px;
+    background:var(--charcoal-2);border:1px solid var(--line-dark);
+    border-radius:20px;padding:8px 16px;
+    font-size:12px;color:rgba(246,243,238,0.5);
+    opacity:0;transition:opacity 0.3s ease;
+    z-index:300;pointer-events:none;
+  }
+  #saveStatus.visible{opacity:1;}
+  #saveStatus.saving{color:rgba(246,243,238,0.5);}
+  #saveStatus.saved{color:var(--brass-light);border-color:rgba(169,121,63,0.3);}
+  #saveStatus.error{color:#e07070;border-color:rgba(224,112,112,0.3);}
+  .status-dot{
+    width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;
+  }
+  #saveStatus.saving .status-dot{animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:0.3;}50%{opacity:1;}}
+  @media(max-width:860px){#saveStatus{bottom:80px;}}
   footer{background:var(--charcoal);border-top:1px solid var(--line-dark);}
   footer .wrap{max-width:var(--max);margin:0 auto;padding:28px 32px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;}
   footer p{font-size:12.5px;color:rgba(246,243,238,0.5);}
@@ -245,7 +323,7 @@
       <a href="/#work">Our Work</a>
       <a href="/#about">About</a>
       <a href="/#contact">Contact</a>
-      <a href="/furniture.html" class="active">Furniture</a>
+      <a href="/furniture/" class="active">Furniture Quotes</a>
     </div>
     <div style="display:flex;align-items:center;gap:14px;">
       <a href="/#contact" class="btn nav-cta">Start a Project</a>
@@ -253,6 +331,8 @@
     </div>
   </nav>
 </header>
+
+<!-- Resend handles all email notifications via /api/* functions -->
 
 <div id="app" class="page-wrap">
   <!-- Rendered by JS below -->
@@ -272,6 +352,8 @@
   </div>
 </footer>
 
+<div id="saveStatus"><span class="status-dot"></span><span id="saveStatusText">Saving…</span></div>
+
 <div class="mobile-cta-bar" id="mobileCta">
   <a href="tel:+17046298677" class="call">Call</a>
   <a href="mailto:me@robbiehodge.com" class="email">Email</a>
@@ -279,13 +361,13 @@
 
 <script>
 /* ─── Config ─────────────────────────────────────────────────── */
-const YOUR_EMAIL = 'me@robbiehodge.com';
+const YOUR_EMAIL  = 'me@robbiehodge.com';
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxCbLrJyLKE8pA23R9cKH-KDt2vhaQ8WDdsQq0Mu2S2wNqpvSoO3HK-iVw5KtEn7WFj/exec';
 const TYPE_OPTIONS   = ['Seating','Tables','Covers','Lighting','Decor','Storage','Other'];
 const STATUS_OPTIONS = ['Pending','Quoting','Quoted','In Stock','Temporarily Unavailable','Sold Out','Re-purchase Needed'];
 
-/* ─── Helpers ────────────────────────────────────────────────── */
+/* ─── Misc helpers ───────────────────────────────────────────── */
 document.getElementById('year').textContent = new Date().getFullYear();
-
 document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('navLinks').classList.toggle('open');
 });
@@ -294,66 +376,112 @@ function fmt(n) {
   const num = parseFloat(n);
   return isNaN(num) ? '—' : '$' + num.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
-function lineTotal(item) {
-  return (parseFloat(item.priceEach)||0) * (parseInt(item.qty)||0);
-}
-function orderTotal(items) {
-  return items.reduce((s,it) => s + lineTotal(it), 0);
-}
+function lineTotal(it) { return (parseFloat(it.priceEach)||0) * (parseInt(it.qty)||0); }
+function orderTotal(items) { return items.reduce((s,it) => s + lineTotal(it), 0); }
 function newItem() {
   return { id: Math.random().toString(36).slice(2), name:'', url:'', qty:1, type:'', notes:'', priceEach:'', stock:'', status:'Pending' };
 }
 function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
 /* ─── URL params ─────────────────────────────────────────────── */
-const params  = new URLSearchParams(location.search);
+const params    = new URLSearchParams(location.search);
 const CLIENT_ID = (params.get('id') || '').toLowerCase().trim();
-const IS_ADMIN  = params.get('admin') === '1';
+const IS_ADMIN  = params.get('admin') === 'hodge2026';
 
-/* ─── Storage ────────────────────────────────────────────────── */
+/* ─── Google Sheets API ──────────────────────────────────────── */
+async function api(payload) {
+  try {
+    // Use GET for everything — avoids no-cors truncation on POST saves
+    const url = new URL(BACKEND_URL);
+    url.searchParams.set('action', payload.action);
+    if (payload.clientId) url.searchParams.set('clientId', payload.clientId);
+    if (payload.items)    url.searchParams.set('items', JSON.stringify(payload.items));
+    if (payload.contact)  url.searchParams.set('contact', JSON.stringify(payload.contact));
+    if (payload.submitted !== undefined) url.searchParams.set('submitted', payload.submitted);
+
+    const r = await fetch(url.toString());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch(e) {
+    console.error('API error', e);
+    return { ok: false, error: e.message };
+  }
+}
+
 async function loadOrder(id) {
-  try { const r = await window.storage.get('order:'+id); return r ? JSON.parse(r.value) : null; }
-  catch { return null; }
+  const r = await api({ action:'load', clientId: id });
+  if (!r.ok) return null;
+  return { items: r.items || [], submitted: r.submitted || false, contact: r.contact || {} };
 }
 async function saveOrder(id, data) {
-  try { await window.storage.set('order:'+id, JSON.stringify(data)); } catch(e) { console.error(e); }
+  return api({ action:'save', clientId: id, items: data.items, submitted: data.submitted, contact: data.contact || {} });
 }
-async function listOrders() {
-  try { const r = await window.storage.list('order:'); return r ? r.keys : []; }
-  catch { return []; }
+async function listClients() {
+  const r = await api({ action:'listClients' });
+  return r.ok ? (r.clients || []) : [];
 }
 
 /* ─── Render helpers ─────────────────────────────────────────── */
 function fieldHTML(label, inputHTML, req) {
-  return `<div class="field"><label>${label}${req?'<span class="req"> *</span>':''}</label>${inputHTML}</div>`;
+  return `<div class="field"><label>${label}${req ? '<span class="req"> *</span>' : ''}</label>${inputHTML}</div>`;
 }
 function inp(name, val, placeholder, type) {
-  type = type||'text';
-  return `<input type="${type}" name="${name}" value="${esc(val||'')}" placeholder="${esc(placeholder||'')}">`; 
+  return `<input type="${type||'text'}" name="${name}" value="${esc(val||'')}" placeholder="${esc(placeholder||'')}">`;
 }
 function sel(name, val, options) {
   const opts = options.map(o => `<option${o===val?' selected':''}>${esc(o)}</option>`).join('');
   return `<select name="${name}"><option value="">— select —</option>${opts}</select>`;
 }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
-/* ─── Item card HTML ─────────────────────────────────────────── */
+/* ─── Contact block HTML ─────────────────────────────────────── */
+function contactBlockHTML(contact) {
+  return `
+  <div class="item-card" id="contactBlock" style="margin-bottom:20px;border-color:rgba(169,121,63,0.3);">
+    <div class="item-card-header" style="margin-bottom:14px;">
+      <span class="item-num">Your Info</span>
+    </div>
+    <div class="field-grid" style="grid-template-columns:1fr 1fr 1fr;gap:14px;">
+      ${fieldHTML('Full Name', inp('contact-name', contact.name, 'Jane Smith'), false)}
+      ${fieldHTML('Email', inp('contact-email', contact.email, 'jane@email.com', 'email'), false)}
+      ${fieldHTML('Phone', inp('contact-phone', contact.phone, '(704) 555-0100', 'tel'), false)}
+    </div>
+  </div>`;
+}
+
+function collectContact() {
+  return {
+    name:  (document.querySelector('[name="contact-name"]')  || {}).value || '',
+    email: (document.querySelector('[name="contact-email"]') || {}).value || '',
+    phone: (document.querySelector('[name="contact-phone"]') || {}).value || '',
+  };
+}
+
+/* ─── Item card ──────────────────────────────────────────────── */
 function itemCardHTML(item, idx, isAdmin) {
   const lt = lineTotal(item);
+  const urlDomain = (() => { try { return item.url ? new URL(item.url).hostname.replace('www.','') : ''; } catch { return ''; } })();
   return `
   <div class="item-card" data-id="${item.id}">
     <div class="item-card-header">
       <span class="item-num">Item ${idx+1}</span>
-      <button class="remove-btn" data-remove="${item.id}" title="Remove">×</button>
+      <button class="remove-btn" data-remove="${item.id}" title="Remove item">×</button>
     </div>
     <div class="field-grid fg-4">
       ${fieldHTML('Item Name', inp('name', item.name, 'e.g. Belvedere Lounge Chair'), true)}
-      <div class="field span-2">${fieldHTML('Reference URL', inp('url', item.url, 'Paste product link'))}</div>
-      ${fieldHTML('Qty', `<input type="number" name="qty" min="1" value="${parseInt(item.qty)||1}">`)}
+      <div class="field span-2">
+        <label>Reference URL</label>
+        <input type="url" name="url" value="${esc(item.url||'')}" placeholder="Paste product link">
+        ${urlDomain ? `<div style="margin-top:5px;"><a href="${esc(item.url)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--brass-light);text-decoration:none;">↗ ${esc(urlDomain)}</a></div>` : ''}
+      </div>
+      <div class="field">
+        <label>Qty <span class="req">*</span></label>
+        <input type="number" name="qty" min="1" max="999" value="${Math.max(1,parseInt(item.qty)||1)}">
+      </div>
       ${fieldHTML('Type', sel('type', item.type, TYPE_OPTIONS))}
     </div>
     <div class="field-grid fg-1" style="margin-top:12px;">
-      ${fieldHTML('Notes / Specs', `<textarea name="notes" placeholder="Color, finish, fabric, dimensions…">${esc(item.notes)}</textarea>`)}
+      ${fieldHTML('Notes / Specs', `<textarea name="notes" placeholder="Color, finish, fabric, dimensions, anything specific…">${esc(item.notes)}</textarea>`)}
     </div>
     ${isAdmin ? `
     <div class="admin-strip">
@@ -373,53 +501,175 @@ function itemCardHTML(item, idx, isAdmin) {
 
 /* ─── Collect items from DOM ─────────────────────────────────── */
 function collectItems() {
-  return [...document.querySelectorAll('.item-card')].map(card => {
-    const id  = card.dataset.id;
-    const get = n => (card.querySelector(`[name="${n}"]`)||{}).value || '';
-    return { id, name:get('name'), url:get('url'), qty:get('qty')||1, type:get('type'), notes:get('notes'),
-      priceEach:get('priceEach'), stock:get('stock'), status:get('status')||'Pending' };
+  return [...document.querySelectorAll('.item-card[data-id]')].map(card => {
+    const get = n => (card.querySelector(`[name="${n}"]`) || {}).value || '';
+    return {
+      id: card.dataset.id,
+      name: get('name'), url: get('url'),
+      qty: Math.max(1, parseInt(get('qty')) || 1),
+      type: get('type'), notes: get('notes'),
+      priceEach: get('priceEach'), stock: get('stock'),
+      status: get('status') || 'Pending'
+    };
   });
 }
 
-/* ─── Auto-save ──────────────────────────────────────────────── */
-let _autoSave;
-function startAutoSave(id, getSubmitted) {
-  clearInterval(_autoSave);
-  _autoSave = setInterval(async () => {
-    const items = collectItems();
-    await saveOrder(id, { items, submitted: getSubmitted() });
-  }, 30000);
+/* ─── Validation ─────────────────────────────────────────────── */
+function validateItems(items) {
+  const errors = [];
+  items.forEach((it, i) => {
+    if (!it.name.trim()) errors.push(`Item ${i+1}: item name is required.`);
+    if (parseInt(it.qty) < 1 || isNaN(parseInt(it.qty))) errors.push(`Item ${i+1}: quantity must be at least 1.`);
+  });
+  return errors;
+}
+
+/* ─── Save status indicator ──────────────────────────────────── */
+const statusEl   = document.getElementById('saveStatus');
+const statusText = document.getElementById('saveStatusText');
+let hideTimer;
+
+function showStatus(state, text) {
+  statusEl.className = 'visible ' + state;
+  statusText.textContent = text;
+  clearTimeout(hideTimer);
+  if (state === 'saved') {
+    hideTimer = setTimeout(() => { statusEl.className = ''; }, 3000);
+  }
+}
+
+/* ─── Debounced auto-save ────────────────────────────────────── */
+let _debounce;
+function scheduleSave(id, getData) {
+  clearTimeout(_debounce);
+  showStatus('saving', 'Saving…');
+  _debounce = setTimeout(async () => {
+    const data = getData();
+    const r = await saveOrder(id, data, false);
+    if (r && r.ok === false) {
+      showStatus('error', 'Save failed — retrying…');
+      setTimeout(() => scheduleSave(id, getData), 3000);
+    } else {
+      showStatus('saved', 'Saved ✓');
+    }
+  }, 1500);
+}
+
+/* ─── Spinner / error ────────────────────────────────────────── */
+function showSpinner(msg) {
+  document.getElementById('app').innerHTML = `
+    <div style="text-align:center;padding:80px 0;">
+      <div style="width:36px;height:36px;border:2px solid var(--brass);border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 20px;"></div>
+      <p style="color:rgba(246,243,238,0.4);font-size:14px;">${msg||'Loading…'}</p>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+}
+
+function showError(msg, retryFn) {
+  document.getElementById('app').innerHTML = `
+    <div style="max-width:480px;margin:80px auto;text-align:center;padding:0 24px;">
+      <div style="font-size:36px;margin-bottom:16px;">⚠️</div>
+      <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;margin-bottom:12px;">Something went wrong</h2>
+      <p style="color:rgba(246,243,238,0.5);margin-bottom:28px;line-height:1.7;">${msg}</p>
+      ${retryFn ? '<button class="btn btn-brass" id="retryBtn">Try Again</button>' : ''}
+    </div>`;
+  if (retryFn) document.getElementById('retryBtn').addEventListener('click', retryFn);
 }
 
 /* ─── CLIENT VIEW ────────────────────────────────────────────── */
 async function renderClient() {
-  const id   = CLIENT_ID;
-  const name = cap(id);
-  const data = await loadOrder(id) || { items: [newItem()], submitted: false };
-  let submitted = data.submitted;
-  let items = data.items && data.items.length ? data.items : [newItem()];
+  const id    = CLIENT_ID;
+  const name  = cap(id);
+  // Read email from URL param (set on first visit from landing page)
+  const emailParam = decodeURIComponent(params.get('email') || '');
 
-  function getSubmitted() { return submitted; }
+  showSpinner('Loading your quote…');
+
+  let data;
+  try { data = await loadOrder(id); }
+  catch(e) {
+    showError("We couldn't load your quote. Check your connection and try again.", renderClient);
+    return;
+  }
+  if (!data) {
+    showError("We couldn't connect to the server. Please try refreshing the page.", renderClient);
+    return;
+  }
+
+  // If already submitted — show locked read-only screen
+  if (data.submitted) {
+    const cleanUrl = location.origin + location.pathname + '?id=' + id;
+    document.getElementById('app').innerHTML = `
+      <div class="success-screen">
+        <div class="success-banner">
+          <div class="success-icon">✓</div>
+          <h2>Quote Submitted</h2>
+          <p>Your quote has been received and is locked. Robbie will follow up with pricing shortly.</p>
+          <p style="margin-top:12px;font-size:13px;color:rgba(246,243,238,0.4);">Need to add something? Reply to your confirmation email or contact Robbie directly.</p>
+        </div>
+        ${data.items && data.items.length ? `
+        <div style="margin-top:8px;">
+          <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--brass);font-weight:600;margin-bottom:16px;">Items Submitted</div>
+          ${data.items.map((it,i) => `
+            <div style="padding:14px 0;border-bottom:1px solid var(--line-dark);display:flex;gap:16px;align-items:flex-start;">
+              <span style="font-size:11px;color:var(--brass);font-weight:600;flex-shrink:0;width:20px;">${i+1}</span>
+              <div>
+                <div style="font-size:14px;color:var(--paper);margin-bottom:2px;">${esc(it.name)}</div>
+                <div style="font-size:12px;color:rgba(246,243,238,0.4);">Qty: ${it.qty}${it.type ? ' · ' + esc(it.type) : ''}${it.notes ? ' · ' + esc(it.notes) : ''}</div>
+                ${it.url ? `<div style="margin-top:4px;"><a href="${esc(it.url)}" target="_blank" style="font-size:11px;color:var(--brass-light);">↗ View Item</a></div>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    return;
+  }
+
+  let submitted = false;
+  let isDirty   = false;
+  let items     = data.items && data.items.length ? data.items : [newItem()];
+
+  // Pre-fill email from URL param on first visit; otherwise use saved contact
+  let contact = data.contact && data.contact.email
+    ? data.contact
+    : { ...( data.contact || {} ), email: emailParam };
+
+  // Canonical URL without the ?email= param (clean bookmark URL)
+  const cleanUrl = location.origin + location.pathname + '?id=' + id;
+
+  function getData() {
+    return { items: collectItems(), submitted, contact: collectContact() };
+  }
+
+  function scheduleClientSave() {
+    if (!isDirty) return;
+    scheduleSave(id, getData);
+  }
 
   function render() {
     const gt = orderTotal(items.filter(it => it.priceEach));
     document.getElementById('app').innerHTML = `
-      <div class="page-eyebrow">Furniture Order</div>
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px;">
-        <h1 class="page-title" style="margin-bottom:0;">${name}'s Order</h1>
-        ${submitted ? '<span class="badge">Submitted</span>' : ''}
+
+      <!-- URL bookmark banner -->
+      <div style="background:rgba(169,121,63,0.08);border:1px solid rgba(169,121,63,0.25);border-radius:8px;
+                  padding:14px 18px;margin-bottom:32px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--brass);font-weight:600;margin-bottom:4px;">Your Personal Quote Link</div>
+          <div style="font-size:13px;color:rgba(246,243,238,0.6);word-break:break-all;">${esc(cleanUrl)}</div>
+        </div>
+        <button id="bannerCopyBtn" class="btn btn-outline" style="font-size:12px;padding:8px 16px;flex-shrink:0;">Copy &amp; Bookmark</button>
       </div>
-      <p class="page-sub">
-        ${submitted
-          ? 'Your order has been submitted. Robbie will get back to you with pricing. You can still add items below if needed — just submit again when done.'
-          : 'Add the items you\'d like sourced. Paste a reference link, add quantity and any specs. Your list saves automatically — come back anytime. Hit <strong>Submit for Quote</strong> when you\'re ready.'}
-      </p>
+
+      <div class="page-eyebrow">Quote Request</div>
+      <h1 class="page-title" style="margin-bottom:14px;">${name}'s Quote</h1>
+      <p class="page-sub">Add the items you'd like sourced below. Paste a reference link, add quantity and any specs. Your list <strong>saves automatically</strong> as you type — come back anytime from any device using the link above. Hit <strong>Submit for Quote</strong> when you're done.</p>
+
+      ${contactBlockHTML(contact)}
 
       <div class="items-list" id="itemsList">
         ${items.map((it,i) => itemCardHTML(it, i, false)).join('')}
       </div>
 
-      <button class="add-btn" id="addBtn">+ Add Another Item</button>
+      <button class="add-btn" id="addBtn">＋ Add Another Item</button>
 
       ${gt > 0 ? `
       <div class="totals-card">
@@ -438,107 +688,201 @@ async function renderClient() {
         <button class="btn btn-outline" id="saveBtn">Save Draft</button>
         <button class="btn btn-brass" id="submitBtn">Submit for Quote →</button>
       </div>
-    `;
+
+      <!-- Deadline countdown -->
+      <div id="countdownWrap" style="margin-top:40px;padding:24px 28px;background:rgba(246,243,238,0.03);border:1px solid var(--line-dark);border-radius:8px;text-align:center;">
+        <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass);font-weight:600;margin-bottom:14px;">Quote Deadline</div>
+        <div style="font-size:13px;color:rgba(246,243,238,0.4);margin-bottom:16px;">September 21, 2026 at 5:00 PM local time</div>
+        <div id="countdown" style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;"></div>
+        <div id="countdownExpired" style="display:none;font-family:'Cormorant Garamond',serif;font-size:22px;color:#e07070;">The quote window has closed.</div>
+      </div>`;
     attachClientEvents();
+    startCountdown();
+  }
+
+  let _cdInterval = null; // single interval, cleared on re-render
+
+  function startCountdown() {
+    if (_cdInterval) { clearInterval(_cdInterval); _cdInterval = null; }
+    const cdEl      = document.getElementById('countdown');
+    const expiredEl = document.getElementById('countdownExpired');
+    if (!cdEl) return;
+
+    const deadline = new Date(2026, 8, 21, 17, 0, 0); // Sep 21 2026 5:00 PM local
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function tick() {
+      const now  = new Date();
+      const diff = deadline - now;
+      if (diff <= 0) {
+        clearInterval(_cdInterval);
+        cdEl.style.display      = 'none';
+        expiredEl.style.display = 'block';
+        return;
+      }
+      const days    = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours   = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      cdEl.innerHTML = `
+        <div class="cd-block"><div class="cd-num">${days}</div><div class="cd-label">Days</div></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-block"><div class="cd-num">${pad(hours)}</div><div class="cd-label">Hours</div></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-block"><div class="cd-num">${pad(minutes)}</div><div class="cd-label">Minutes</div></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-block"><div class="cd-num">${pad(seconds)}</div><div class="cd-label">Seconds</div></div>`;
+    }
+
+    tick();
+    _cdInterval = setInterval(tick, 1000);
   }
 
   function attachClientEvents() {
-    // Remove item
+    // Banner copy button
+    document.getElementById('bannerCopyBtn').addEventListener('click', () => {
+      navigator.clipboard.writeText(cleanUrl).then(() => {
+        const b = document.getElementById('bannerCopyBtn');
+        b.textContent = 'Copied ✓';
+        setTimeout(() => { b.textContent = 'Copy & Bookmark'; }, 2000);
+      }).catch(() => { prompt('Copy your quote link:', cleanUrl); });
+    });
+
+    // Mark dirty and schedule save on any change
+    const markAndSave = () => { isDirty = true; scheduleClientSave(); };
+    document.getElementById('contactBlock').addEventListener('input', markAndSave);
+    document.getElementById('itemsList').addEventListener('input',  markAndSave);
+    document.getElementById('itemsList').addEventListener('change', markAndSave);
+
+    // Remove item — confirm first, only save if content existed
     document.querySelectorAll('[data-remove]').forEach(btn => {
       btn.addEventListener('click', () => {
+        const nameEl = btn.closest('.item-card').querySelector('[name="name"]');
+        const label  = nameEl && nameEl.value.trim() ? `"${nameEl.value.trim()}"` : 'this item';
+        if (!confirm(`Remove ${label}?`)) return;
+        const hadContent = nameEl && nameEl.value.trim();
         items = collectItems().filter(it => it.id !== btn.dataset.remove);
         if (!items.length) items = [newItem()];
         render();
+        if (hadContent) { isDirty = true; scheduleClientSave(); }
       });
     });
 
-    // Add item
+    // Add item — don't save yet, wait for user to type something
     document.getElementById('addBtn').addEventListener('click', () => {
       items = collectItems();
       items.push(newItem());
       render();
-      document.querySelector('.item-card:last-child').scrollIntoView({ behavior:'smooth', block:'start' });
+      // Don't set isDirty or scheduleSave here — blank item not worth saving
+      requestAnimationFrame(() => {
+        const last = document.querySelector('.item-card[data-id]:last-of-type');
+        if (last) last.scrollIntoView({ behavior:'smooth', block:'start' });
+      });
     });
 
-    // Save draft
+    // Manual save draft
     document.getElementById('saveBtn').addEventListener('click', async () => {
-      items = collectItems();
+      clearTimeout(_debounce);
       const btn = document.getElementById('saveBtn');
       btn.textContent = 'Saving…'; btn.disabled = true;
-      await saveOrder(id, { items, submitted });
-      btn.textContent = 'Saved ✓'; 
+      showStatus('saving', 'Saving…');
+      isDirty = true;
+      await saveOrder(id, getData());
+      showStatus('saved', 'Saved ✓');
+      btn.textContent = 'Saved ✓';
       setTimeout(() => { btn.textContent = 'Save Draft'; btn.disabled = false; }, 2000);
     });
 
-    // Submit
+    // Submit for quote
     document.getElementById('submitBtn').addEventListener('click', async () => {
       items = collectItems();
-      if (items.some(it => !it.name.trim())) { alert('Please give each item a name before submitting.'); return; }
+      contact = collectContact();
+      const errors = validateItems(items);
+      if (errors.length) { alert(errors.join('\n')); return; }
+
       const btn = document.getElementById('submitBtn');
       btn.textContent = 'Submitting…'; btn.disabled = true;
+      document.getElementById('saveBtn').disabled = true;
+
+      clearTimeout(_debounce);
+      showStatus('saving', 'Saving…');
+      await saveOrder(id, { items, submitted: true, contact });
+      showStatus('saved', 'Saved ✓');
       submitted = true;
-      await saveOrder(id, { items, submitted: true });
+      isDirty = false; // reset so returning doesn't re-save blank
 
-      // Build mailto
-      const lines = items.map((it,i) =>
-        `Item ${i+1}: ${it.name}\n  Qty: ${it.qty}\n  URL: ${it.url||'—'}\n  Type: ${it.type||'—'}\n  Notes: ${it.notes||'—'}`
-      ).join('\n\n');
-      const body    = encodeURIComponent(`Hi Robbie,\n\n${name} has submitted their furniture order.\n\n---\n\n${lines}\n\n---\n\nView full order: ${location.href}`);
-      const subject = encodeURIComponent(`Furniture Quote Request — ${name}`);
-      window.open(`mailto:${YOUR_EMAIL}?subject=${subject}&body=${body}`);
+      // Notify Robbie via Resend
+      try {
+        await fetch('/api/notify-quote-submitted', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId: id, contact, items, quoteUrl: cleanUrl }),
+        });
+      } catch(e) { console.warn('Submit notify failed', e); }
 
-      // Show success
+      // Send client confirmation email
+      if (contact.email) {
+        try {
+          await fetch('/api/confirm-quote-submitted', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email:    contact.email,
+              name:     contact.name || '',
+              items,
+              quoteUrl: cleanUrl,
+            }),
+          });
+        } catch(e) { console.warn('Client confirm failed', e); }
+      }
+
       document.getElementById('app').innerHTML = `
         <div class="success-screen">
-          <div class="success-icon">✓</div>
-          <h2>Order Submitted</h2>
-          <p>Robbie has been notified and will follow up with pricing shortly. Your order is saved — return to this link anytime to check for updates or add more items.</p>
-          <div style="margin-top:28px;">
-            <button class="btn btn-outline" onclick="location.reload()">Back to My Order</button>
+          <div class="success-banner">
+            <div class="success-icon">✓</div>
+            <h2>Quote Submitted!</h2>
+            <p>Robbie has been notified and will follow up with pricing shortly. Your quote is locked — if you need to add anything, reply to your confirmation email or contact Robbie directly.</p>
           </div>
         </div>`;
     });
   }
 
   render();
-  startAutoSave(id, getSubmitted);
 }
 
 /* ─── ADMIN VIEW ─────────────────────────────────────────────── */
 async function renderAdmin() {
+
   async function showList() {
-    const keys   = await listOrders();
-    const orders = await Promise.all(keys.map(async k => {
-      const id   = k.replace('order:','');
-      const data = await loadOrder(id);
-      return { id, data };
-    }));
-    const valid = orders.filter(o => o.data);
+    showSpinner('Loading quotes…');
+    let clients;
+    try { clients = await listClients(); }
+    catch(e) { showError('Could not load quotes. Check your connection.', showList); return; }
 
     document.getElementById('app').innerHTML = `
       <div class="page-eyebrow">Admin</div>
-      <h1 class="page-title">All Orders</h1>
-      <p class="page-sub">Click an order to open it, fill in pricing, and update statuses.
-        Share client links as: <code style="background:rgba(246,243,238,0.08);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--brass-light);">hodge-ind.com/furniture.html?id=firstname</code></p>
-
-      ${valid.length === 0
-        ? '<div style="text-align:center;padding:60px 0;color:rgba(246,243,238,0.3);">No orders yet.</div>'
-        : `<div class="order-cards">${valid.map(o => {
-            const gt = orderTotal(o.data.items||[]);
-            return `<div class="order-card" data-open="${o.id}">
+      <h1 class="page-title">All Quote Requests</h1>
+      <p class="page-sub">Click a quote to open it, fill in pricing, and update statuses.
+        Share client links: <code style="background:rgba(246,243,238,0.08);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--brass-light);">hodge-ind.com/furniture/?id=firstname</code>
+      </p>
+      ${clients.length === 0
+        ? '<div style="text-align:center;padding:60px 0;color:rgba(246,243,238,0.3);">No quotes yet.</div>'
+        : `<div class="order-cards">${clients.map(c => `
+            <div class="order-card" data-open="${esc(c.id)}">
               <div>
-                <div class="order-card-name">${cap(o.id)}</div>
+                <div class="order-card-name">${esc(c.name)}</div>
                 <div class="order-card-meta">
-                  ${(o.data.items||[]).length} item${o.data.items?.length!==1?'s':''}
-                  ${o.data.submitted ? ' · <span style="color:var(--brass-light)">Submitted</span>' : ' · Draft'}
+                  ${c.itemCount} item${c.itemCount!==1?'s':''}
+                  ${c.submitted ? ' · <span style="color:var(--brass-light)">Submitted</span>' : ' · Draft'}
                 </div>
               </div>
               <div class="order-card-total">
-                ${gt > 0 ? `<div class="amt">${fmt(gt)}</div><div class="lbl">subtotal</div>` : '<div class="lbl" style="margin-top:0;">Not yet priced</div>'}
+                ${c.total > 0
+                  ? `<div class="amt">${fmt(c.total)}</div><div class="lbl">subtotal</div>`
+                  : '<div class="lbl" style="margin-top:0;">Not yet priced</div>'}
               </div>
-            </div>`;
-          }).join('')}</div>`}
-    `;
+            </div>`).join('')}</div>`}`;
 
     document.querySelectorAll('[data-open]').forEach(card => {
       card.addEventListener('click', () => showOrder(card.dataset.open));
@@ -546,43 +890,48 @@ async function renderAdmin() {
   }
 
   async function showOrder(id) {
-    const data  = await loadOrder(id);
+    showSpinner('Loading quote…');
+    let data;
+    try { data = await loadOrder(id); }
+    catch(e) { showError('Could not load this quote.', () => showOrder(id)); return; }
+
     let items   = data?.items?.length ? data.items : [newItem()];
+    let contact = data?.contact || {};
     const name  = cap(id);
 
     function render() {
       const gt = orderTotal(items);
       document.getElementById('app').innerHTML = `
         <div style="margin-bottom:28px;">
-          <button class="btn btn-outline" id="backBtn" style="margin-bottom:20px;">← All Orders</button>
+          <button class="btn btn-outline" id="backBtn" style="margin-bottom:20px;">← All Quotes</button>
           <div class="page-eyebrow">Admin — Pricing</div>
-          <h1 class="page-title">${name}'s Order</h1>
-          <p class="page-sub" style="margin-bottom:0;">
-            ${(data?.submitted) ? '<span style="color:var(--brass-light)">Submitted — awaiting your quote.</span>' : 'Draft — not yet submitted.'}
-            Fill in Price Each and Status for each item, then save.
+          <h1 class="page-title">${esc(name)}'s Quote</h1>
+          <p class="page-sub" style="margin-bottom:16px;">
+            ${data?.submitted
+              ? '<span style="color:var(--brass-light)">✓ Submitted — fill in pricing below and save.</span>'
+              : 'Draft — client has not yet submitted.'}
           </p>
+          ${(contact.name||contact.email||contact.phone) ? `
+          <div style="background:rgba(246,243,238,0.04);border:1px solid var(--line-dark);border-radius:8px;padding:14px 18px;font-size:13px;color:rgba(246,243,238,0.6);display:flex;gap:24px;flex-wrap:wrap;">
+            ${contact.name  ? `<span>👤 ${esc(contact.name)}</span>`  : ''}
+            ${contact.email ? `<span>✉️ <a href="mailto:${esc(contact.email)}" style="color:var(--brass-light);">${esc(contact.email)}</a></span>` : ''}
+            ${contact.phone ? `<span>📞 <a href="tel:${esc(contact.phone)}" style="color:var(--brass-light);">${esc(contact.phone)}</a></span>` : ''}
+          </div>` : ''}
         </div>
-
         <div class="items-list" id="itemsList">
           ${items.map((it,i) => itemCardHTML(it, i, true)).join('')}
         </div>
-
         ${gt > 0 ? `
         <div class="totals-card">
-          <div class="totals-row">
-            <span>Order Subtotal</span><span class="totals-main">${fmt(gt)}</span>
-          </div>
-          <div class="totals-row">
-            <span>50% Deposit</span><span class="totals-sub">${fmt(gt * 0.5)}</span>
-          </div>
+          <div class="totals-row"><span>Quote Subtotal</span><span class="totals-main">${fmt(gt)}</span></div>
+          <div class="totals-row"><span>50% Deposit</span><span class="totals-sub">${fmt(gt*0.5)}</span></div>
         </div>` : ''}
-
         <div class="actions">
           <button class="btn btn-brass" id="savePricingBtn">Save Pricing →</button>
-        </div>
-      `;
+        </div>`;
 
       document.getElementById('backBtn').addEventListener('click', showList);
+
       document.querySelectorAll('[data-remove]').forEach(btn => {
         btn.addEventListener('click', () => {
           items = collectItems().filter(it => it.id !== btn.dataset.remove);
@@ -590,11 +939,25 @@ async function renderAdmin() {
           render();
         });
       });
+
+      // Admin auto-save on pricing changes
+      document.getElementById('itemsList').addEventListener('input', () => {
+        clearTimeout(_debounce);
+        showStatus('saving', 'Saving…');
+        _debounce = setTimeout(async () => {
+          items = collectItems();
+          await saveOrder(id, { ...data, items, contact });
+          showStatus('saved', 'Saved ✓');
+        }, 1500);
+      });
+
       document.getElementById('savePricingBtn').addEventListener('click', async () => {
         items = collectItems();
         const btn = document.getElementById('savePricingBtn');
         btn.textContent = 'Saving…'; btn.disabled = true;
-        await saveOrder(id, { ...data, items });
+        showStatus('saving', 'Saving…');
+        await saveOrder(id, { ...data, items, contact });
+        showStatus('saved', 'Saved ✓');
         btn.textContent = 'Saved ✓';
         setTimeout(() => { btn.textContent = 'Save Pricing →'; btn.disabled = false; }, 2000);
       });
@@ -609,17 +972,169 @@ async function renderAdmin() {
 /* ─── No-ID landing ──────────────────────────────────────────── */
 function renderLanding() {
   document.getElementById('app').innerHTML = `
-    <div class="landing">
-      <div class="page-eyebrow" style="justify-content:center;">Hodge Industries</div>
-      <h1 class="page-title">Furniture Orders</h1>
-      <p>You'll need a personalized link from Robbie to access your order form. Check your email or text him to get your link.</p>
+    <div style="max-width:480px;margin:80px auto;padding:0 24px;">
+      <div class="page-eyebrow" style="justify-content:center;margin-bottom:20px;">Hodge Industries</div>
+      <h1 class="page-title" style="text-align:center;margin-bottom:12px;">Furniture Quotes</h1>
+      <p style="text-align:center;color:rgba(246,243,238,0.5);line-height:1.75;font-size:15px;margin-bottom:40px;">
+        Enter your email to get your personal quote link. Save it — you'll use it every time you come back.
+      </p>
+
+      <div style="background:rgba(246,243,238,0.04);border:1px solid var(--line-dark);border-radius:10px;padding:32px;">
+        <div class="field" style="margin-bottom:20px;">
+          <label>Your Email <span class="req">*</span></label>
+          <input id="landingEmail" type="email" placeholder="jane@email.com" autocomplete="email"
+            style="width:100%;background:rgba(22,21,18,0.6);border:1px solid var(--line-dark);border-radius:5px;
+                   color:var(--paper);font-size:16px;padding:12px 14px;outline:none;font-family:'Inter',sans-serif;
+                   transition:border-color 0.2s;"
+            oninput="this.style.borderColor='var(--brass)'"
+          >
+        </div>
+        <button id="landingBtn" class="btn btn-brass" style="width:100%;padding:14px;font-size:14px;font-weight:700;cursor:pointer;border-radius:5px;">
+          Get My Quote Link →
+        </button>
+        <p id="landingError" style="color:#e07070;font-size:13px;margin-top:12px;text-align:center;display:none;"></p>
+      </div>
+
+      <div id="landingResult" style="display:none;margin-top:24px;background:rgba(169,121,63,0.1);border:2px solid var(--brass);border-radius:10px;padding:28px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:12px;">✓</div>
+        <p style="font-size:14px;color:rgba(246,243,238,0.6);margin-bottom:8px;">Your personal quote link:</p>
+        <div id="landingUrl" style="font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--brass-light);
+             word-break:break-all;margin-bottom:20px;padding:10px;background:rgba(22,21,18,0.4);border-radius:5px;"></div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <button id="copyBtn" class="btn btn-outline" style="font-size:13px;">Copy Link</button>
+          <button id="goBtn" class="btn btn-brass" style="font-size:13px;">Open My Quote →</button>
+        </div>
+        <p style="font-size:12px;color:rgba(246,243,238,0.3);margin-top:16px;line-height:1.6;">
+          Bookmark this link or share it with anyone helping you pick items. It's yours — come back anytime.
+        </p>
+        <p id="emailNote" style="display:none;font-size:13px;color:var(--brass-light);margin-top:10px;"></p>
+      </div>
+
+      <!-- Sizzle reel -->
+      <div class="hodge-hero">
+        <video
+          autoplay muted loop playsinline preload="metadata"
+          poster="/media/hodge-sizzle-poster.jpg"
+          data-desktop="/media/hodge-sizzle-reel-1080.mp4"
+          data-mobile="/media/hodge-sizzle-reel-720.mp4"></video>
+      </div>
     </div>`;
+
+  const emailInput = document.getElementById('landingEmail');
+  const btn        = document.getElementById('landingBtn');
+  const errorEl    = document.getElementById('landingError');
+  const resultEl   = document.getElementById('landingResult');
+  const urlEl      = document.getElementById('landingUrl');
+  let generatedUrl = '';
+
+  emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+
+  btn.addEventListener('click', async () => {
+    const raw = emailInput.value.trim();
+    if (!raw || !raw.includes('@')) {
+      errorEl.textContent = 'Please enter a valid email address.';
+      errorEl.style.display = 'block';
+      emailInput.style.borderColor = '#e07070';
+      return;
+    }
+    errorEl.style.display = 'none';
+
+    // Take everything before the @, strip non-letters, max 20 chars
+    const prefix = raw.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+    if (!prefix) {
+      errorEl.textContent = 'Could not parse that email — please try again.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    const digits     = Math.floor(1000 + Math.random() * 9000);
+    const id         = prefix + digits;
+    // Store email in URL so we can pre-fill it on the form
+    generatedUrl = location.origin + location.pathname + '?id=' + id + '&email=' + encodeURIComponent(raw);
+
+    urlEl.textContent = generatedUrl;
+    resultEl.style.display = 'block';
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    emailInput.disabled = true;
+    btn.disabled = true;
+    btn.textContent = 'Sending your link…';
+
+    // Email them their link via Resend
+    try {
+      await fetch('/api/send-quote-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: raw, quoteUrl: generatedUrl }),
+      });
+    } catch(e) { console.warn('Email send failed', e); }
+
+    // Notify Robbie of new client
+    try {
+      await fetch('/api/notify-new-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: raw, quoteUrl: generatedUrl, clientId: id }),
+      });
+    } catch(e) { console.warn('New client notify failed', e); }
+
+    btn.textContent = 'Link Sent ✓';
+
+    // Show email confirmation note
+    const emailNote = document.getElementById('emailNote');
+    if (emailNote) {
+      emailNote.textContent = `We've also sent your link to ${raw}`;
+      emailNote.style.display = 'block';
+    }
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(generatedUrl).then(() => {
+      const copyBtn = document.getElementById('copyBtn');
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(() => { copyBtn.textContent = 'Copy Link'; }, 2000);
+    }).catch(() => { prompt('Copy your link:', generatedUrl); });
+  });
+
+  document.getElementById('goBtn').addEventListener('click', () => {
+    location.href = generatedUrl;
+  });
 }
 
-/* ─── Boot ───────────────────────────────────────────────────── */
-if (IS_ADMIN)       renderAdmin();
-else if (CLIENT_ID) renderClient();
-else                renderLanding();
+/* ─── localStorage helpers ───────────────────────────────────── */
+const LS_KEY = 'hodge_furniture_id';
+
+function saveIdLocally(id) {
+  try { localStorage.setItem(LS_KEY, id); } catch(e) {}
+}
+function getSavedId() {
+  try { return localStorage.getItem(LS_KEY) || ''; } catch(e) { return ''; }
+}
+
+  /* ── Sizzle reel source picker ── */
+  document.querySelectorAll('.hodge-hero video').forEach(function(v) {
+    var small = window.matchMedia('(max-width: 768px)').matches;
+    v.src = small ? v.dataset.mobile : v.dataset.desktop;
+  });
+</script>
+if (IS_ADMIN) {
+  renderAdmin();
+} else if (CLIENT_ID) {
+  saveIdLocally(CLIENT_ID); // persist this session's ID
+  renderClient();
+} else {
+  // ?reset=1 clears saved ID — useful for testing
+  if (params.get('reset') === '1') {
+    try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  }
+  // No ?id= in URL — check if they've been here before
+  const savedId = getSavedId();
+  if (savedId) {
+    location.replace(location.origin + location.pathname + '?id=' + savedId);
+  } else {
+    renderLanding();
+  }
+}
 </script>
 </body>
 </html>
