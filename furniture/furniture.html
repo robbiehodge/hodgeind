@@ -230,6 +230,26 @@
   .landing{max-width:480px;margin:100px auto;text-align:center;padding:0 24px;}
   .landing p{color:rgba(246,243,238,0.5);line-height:1.75;font-size:15px;}
 
+  /* ── Countdown timer ── */
+  .cd-block{
+    display:inline-flex;flex-direction:column;align-items:center;
+    background:rgba(22,21,18,0.5);border:1px solid var(--line-dark);
+    border-radius:6px;padding:10px 16px;min-width:72px;
+  }
+  .cd-num{
+    font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:500;
+    color:var(--paper);line-height:1;margin-bottom:4px;
+  }
+  .cd-label{
+    font-size:9px;letter-spacing:0.18em;text-transform:uppercase;
+    color:rgba(246,243,238,0.35);font-weight:600;
+  }
+  .cd-sep{
+    font-family:'Cormorant Garamond',serif;font-size:28px;
+    color:rgba(246,243,238,0.2);align-self:center;padding:0 2px;
+  }
+  @media(max-width:480px){.cd-num{font-size:26px;}.cd-block{min-width:56px;padding:8px 10px;}}
+
   /* ── Save status indicator ── */
   #saveStatus{
     position:fixed;bottom:24px;right:24px;
@@ -295,6 +315,7 @@
 <form name="furniture-order" data-netlify="true" netlify-honeypot="bot-field" hidden>
   <input type="hidden" name="form-name" value="furniture-order">
   <input name="client">
+  <input name="contact">
   <input name="order-url">
   <input name="item-count">
   <textarea name="items"></textarea>
@@ -328,7 +349,7 @@
 <script>
 /* ─── Config ─────────────────────────────────────────────────── */
 const YOUR_EMAIL  = 'me@robbiehodge.com';
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwF2kciU_i1-Stq_FwiBH5WUdZ-I3zCdmBKYQuWQC5Z_dta7x87MI3zFo8l0PM8YQvt/exec';
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx8ww6cWKn5S-thPneNJjbRN8-mUokfMXyhMwes4bMZzK80cA-fvmuDQfDZVHFQRQ_r/exec';
 const TYPE_OPTIONS   = ['Seating','Tables','Covers','Lighting','Decor','Storage','Other'];
 const STATUS_OPTIONS = ['Pending','Quoting','Quoted','In Stock','Temporarily Unavailable','Sold Out','Re-purchase Needed'];
 
@@ -353,7 +374,7 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot
 /* ─── URL params ─────────────────────────────────────────────── */
 const params    = new URLSearchParams(location.search);
 const CLIENT_ID = (params.get('id') || '').toLowerCase().trim();
-const IS_ADMIN  = params.get('admin') === '1';
+const IS_ADMIN  = params.get('admin') === 'hodge2026';
 
 /* ─── Google Sheets API ──────────────────────────────────────── */
 async function api(payload) {
@@ -385,8 +406,8 @@ async function loadOrder(id) {
   if (!r.ok) return null;
   return { items: r.items || [], submitted: r.submitted || false, contact: r.contact || {} };
 }
-async function saveOrder(id, data) {
-  return api({ action:'save', clientId: id, items: data.items, submitted: data.submitted, contact: data.contact || {} });
+async function saveOrder(id, data, isSubmit) {
+  return api({ action:'save', clientId: id, items: data.items, submitted: data.submitted, contact: data.contact || {}, isSubmit: isSubmit === true });
 }
 async function listClients() {
   const r = await api({ action:'listClients' });
@@ -516,7 +537,7 @@ function scheduleSave(id, getData) {
   showStatus('saving', 'Saving…');
   _debounce = setTimeout(async () => {
     const data = getData();
-    const r = await saveOrder(id, data);
+    const r = await saveOrder(id, data, false);
     if (r && r.ok === false) {
       showStatus('error', 'Save failed — retrying…');
       setTimeout(() => scheduleSave(id, getData), 3000);
@@ -634,8 +655,56 @@ async function renderClient() {
       <div class="actions">
         <button class="btn btn-outline" id="saveBtn">Save Draft</button>
         <button class="btn btn-brass" id="submitBtn">Submit for Quote →</button>
+      </div>
+
+      <!-- Deadline countdown -->
+      <div id="countdownWrap" style="margin-top:40px;padding:24px 28px;background:rgba(246,243,238,0.03);border:1px solid var(--line-dark);border-radius:8px;text-align:center;">
+        <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--brass);font-weight:600;margin-bottom:14px;">Quote Deadline</div>
+        <div style="font-size:13px;color:rgba(246,243,238,0.4);margin-bottom:16px;">September 21, 2026 at 5:00 PM local time</div>
+        <div id="countdown" style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;"></div>
+        <div id="countdownExpired" style="display:none;font-family:'Cormorant Garamond',serif;font-size:22px;color:#e07070;">The quote window has closed.</div>
       </div>`;
     attachClientEvents();
+    startCountdown();
+  }
+
+  let _cdInterval = null; // single interval, cleared on re-render
+
+  function startCountdown() {
+    if (_cdInterval) { clearInterval(_cdInterval); _cdInterval = null; }
+    const cdEl      = document.getElementById('countdown');
+    const expiredEl = document.getElementById('countdownExpired');
+    if (!cdEl) return;
+
+    const deadline = new Date(2026, 8, 21, 17, 0, 0); // Sep 21 2026 5:00 PM local
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function tick() {
+      const now  = new Date();
+      const diff = deadline - now;
+      if (diff <= 0) {
+        clearInterval(_cdInterval);
+        cdEl.style.display      = 'none';
+        expiredEl.style.display = 'block';
+        return;
+      }
+      const days    = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours   = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      cdEl.innerHTML = `
+        <div class="cd-block"><div class="cd-num">${days}</div><div class="cd-label">Days</div></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-block"><div class="cd-num">${pad(hours)}</div><div class="cd-label">Hours</div></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-block"><div class="cd-num">${pad(minutes)}</div><div class="cd-label">Minutes</div></div>
+        <div class="cd-sep">:</div>
+        <div class="cd-block"><div class="cd-num">${pad(seconds)}</div><div class="cd-label">Seconds</div></div>`;
+    }
+
+    tick();
+    _cdInterval = setInterval(tick, 1000);
   }
 
   function attachClientEvents() {
@@ -688,7 +757,7 @@ async function renderClient() {
       btn.textContent = 'Saving…'; btn.disabled = true;
       showStatus('saving', 'Saving…');
       isDirty = true;
-      await saveOrder(id, getData());
+      await saveOrder(id, getData(), false);
       showStatus('saved', 'Saved ✓');
       btn.textContent = 'Saved ✓';
       setTimeout(() => { btn.textContent = 'Save Draft'; btn.disabled = false; }, 2000);
@@ -707,7 +776,7 @@ async function renderClient() {
 
       clearTimeout(_debounce);
       showStatus('saving', 'Saving…');
-      await saveOrder(id, { items, submitted: true, contact });
+      await saveOrder(id, { items, submitted: true, contact }, true);
       showStatus('saved', 'Saved ✓');
       submitted = true;
       isDirty = false; // reset so returning doesn't re-save blank
