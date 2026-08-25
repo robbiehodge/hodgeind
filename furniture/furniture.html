@@ -349,7 +349,7 @@
 <script>
 /* ─── Config ─────────────────────────────────────────────────── */
 const YOUR_EMAIL  = 'me@robbiehodge.com';
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx8ww6cWKn5S-thPneNJjbRN8-mUokfMXyhMwes4bMZzK80cA-fvmuDQfDZVHFQRQ_r/exec';
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz4LmO1e5MmFV1hOyQ7WQ2iOE4bX1cxstB_ltFJ9aWmb63nz23X7YrSt18PbtBbHHNd/exec';
 const TYPE_OPTIONS   = ['Seating','Tables','Covers','Lighting','Decor','Storage','Other'];
 const STATUS_OPTIONS = ['Pending','Quoting','Quoted','In Stock','Temporarily Unavailable','Sold Out','Re-purchase Needed'];
 
@@ -723,27 +723,26 @@ async function renderClient() {
     document.getElementById('itemsList').addEventListener('input',  markAndSave);
     document.getElementById('itemsList').addEventListener('change', markAndSave);
 
-    // Remove item — confirm first
+    // Remove item — confirm first, only save if content existed
     document.querySelectorAll('[data-remove]').forEach(btn => {
       btn.addEventListener('click', () => {
         const nameEl = btn.closest('.item-card').querySelector('[name="name"]');
         const label  = nameEl && nameEl.value.trim() ? `"${nameEl.value.trim()}"` : 'this item';
         if (!confirm(`Remove ${label}?`)) return;
+        const hadContent = nameEl && nameEl.value.trim();
         items = collectItems().filter(it => it.id !== btn.dataset.remove);
         if (!items.length) items = [newItem()];
         render();
-        isDirty = true;
-        scheduleClientSave();
+        if (hadContent) { isDirty = true; scheduleClientSave(); }
       });
     });
 
-    // Add item
+    // Add item — don't save yet, wait for user to type something
     document.getElementById('addBtn').addEventListener('click', () => {
       items = collectItems();
       items.push(newItem());
       render();
-      isDirty = true;
-      scheduleClientSave();
+      // Don't set isDirty or scheduleSave here — blank item not worth saving
       requestAnimationFrame(() => {
         const last = document.querySelector('.item-card[data-id]:last-of-type');
         if (last) last.scrollIntoView({ behavior:'smooth', block:'start' });
