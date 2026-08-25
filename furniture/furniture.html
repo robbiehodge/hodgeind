@@ -327,15 +327,13 @@
 
 <script>
 /* ─── Config ─────────────────────────────────────────────────── */
-const YOUR_EMAIL   = 'me@robbiehodge.com';
-// ⬇ Paste your Apps Script Web App URL here after deploying
-const BACKEND_URL  = 'https://script.google.com/macros/s/AKfycbxTfwRJwcXjaEqsCqNCWHohUVVGAb8D1P6kku08EpbiZHmzaYrmpnxWneGtawr2YTlt/exec';
+const YOUR_EMAIL  = 'me@robbiehodge.com';
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxTfwRJwcXjaEqsCqNCWHohUVVGAb8D1P6kku08EpbiZHmzaYrmpnxWneGtawr2YTlt/exec';
 const TYPE_OPTIONS   = ['Seating','Tables','Covers','Lighting','Decor','Storage','Other'];
 const STATUS_OPTIONS = ['Pending','Quoting','Quoted','In Stock','Temporarily Unavailable','Sold Out','Re-purchase Needed'];
 
-/* ─── Helpers ────────────────────────────────────────────────── */
+/* ─── Misc helpers ───────────────────────────────────────────── */
 document.getElementById('year').textContent = new Date().getFullYear();
-
 document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('navLinks').classList.toggle('open');
 });
@@ -344,19 +342,16 @@ function fmt(n) {
   const num = parseFloat(n);
   return isNaN(num) ? '—' : '$' + num.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
-function lineTotal(item) {
-  return (parseFloat(item.priceEach)||0) * (parseInt(item.qty)||0);
-}
-function orderTotal(items) {
-  return items.reduce((s,it) => s + lineTotal(it), 0);
-}
+function lineTotal(it) { return (parseFloat(it.priceEach)||0) * (parseInt(it.qty)||0); }
+function orderTotal(items) { return items.reduce((s,it) => s + lineTotal(it), 0); }
 function newItem() {
   return { id: Math.random().toString(36).slice(2), name:'', url:'', qty:1, type:'', notes:'', priceEach:'', stock:'', status:'Pending' };
 }
 function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
 /* ─── URL params ─────────────────────────────────────────────── */
-const params  = new URLSearchParams(location.search);
+const params    = new URLSearchParams(location.search);
 const CLIENT_ID = (params.get('id') || '').toLowerCase().trim();
 const IS_ADMIN  = params.get('admin') === '1';
 
@@ -364,23 +359,20 @@ const IS_ADMIN  = params.get('admin') === '1';
 async function api(payload) {
   try {
     const url = new URL(BACKEND_URL);
-    // Pass action and clientId as URL params so Apps Script can read them on GET
     url.searchParams.set('action', payload.action);
     if (payload.clientId) url.searchParams.set('clientId', payload.clientId);
 
     if (payload.action === 'load' || payload.action === 'listClients') {
-      // GET — no CORS issues
       const r = await fetch(url.toString());
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       return await r.json();
     } else {
-      // POST for save — use no-cors, Apps Script still processes it
+      // POST with no-cors — Apps Script processes it, we can't read response
       await fetch(url.toString(), {
-        method: 'POST',
-        mode: 'no-cors',
+        method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload),
       });
-      // no-cors means we can't read the response — that's OK for saves
       return { ok: true };
     }
   } catch(e) {
@@ -388,50 +380,57 @@ async function api(payload) {
     return { ok: false, error: e.message };
   }
 }
+
 async function loadOrder(id) {
   const r = await api({ action:'load', clientId: id });
   if (!r.ok) return null;
-  return { items: r.items, submitted: r.submitted };
+  return { items: r.items || [], submitted: r.submitted || false };
 }
 async function saveOrder(id, data) {
-  await api({ action:'save', clientId: id, items: data.items, submitted: data.submitted });
+  return api({ action:'save', clientId: id, items: data.items, submitted: data.submitted });
 }
 async function listClients() {
   const r = await api({ action:'listClients' });
-  return r.ok ? r.clients : [];
+  return r.ok ? (r.clients || []) : [];
 }
 
 /* ─── Render helpers ─────────────────────────────────────────── */
 function fieldHTML(label, inputHTML, req) {
-  return `<div class="field"><label>${label}${req?'<span class="req"> *</span>':''}</label>${inputHTML}</div>`;
+  return `<div class="field"><label>${label}${req ? '<span class="req"> *</span>' : ''}</label>${inputHTML}</div>`;
 }
 function inp(name, val, placeholder, type) {
-  type = type||'text';
-  return `<input type="${type}" name="${name}" value="${esc(val||'')}" placeholder="${esc(placeholder||'')}">`; 
+  return `<input type="${type||'text'}" name="${name}" value="${esc(val||'')}" placeholder="${esc(placeholder||'')}">`;
 }
 function sel(name, val, options) {
   const opts = options.map(o => `<option${o===val?' selected':''}>${esc(o)}</option>`).join('');
   return `<select name="${name}"><option value="">— select —</option>${opts}</select>`;
 }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
-/* ─── Item card HTML ─────────────────────────────────────────── */
+/* ─── Item card ──────────────────────────────────────────────── */
 function itemCardHTML(item, idx, isAdmin) {
   const lt = lineTotal(item);
+  const urlDomain = (() => { try { return item.url ? new URL(item.url).hostname.replace('www.','') : ''; } catch { return ''; } })();
   return `
   <div class="item-card" data-id="${item.id}">
     <div class="item-card-header">
       <span class="item-num">Item ${idx+1}</span>
-      <button class="remove-btn" data-remove="${item.id}" title="Remove">×</button>
+      <button class="remove-btn" data-remove="${item.id}" title="Remove item">×</button>
     </div>
     <div class="field-grid fg-4">
       ${fieldHTML('Item Name', inp('name', item.name, 'e.g. Belvedere Lounge Chair'), true)}
-      <div class="field span-2">${fieldHTML('Reference URL', inp('url', item.url, 'Paste product link'))}</div>
-      ${fieldHTML('Qty', `<input type="number" name="qty" min="1" value="${parseInt(item.qty)||1}">`)}
+      <div class="field span-2">
+        <label>Reference URL</label>
+        <input type="url" name="url" value="${esc(item.url||'')}" placeholder="Paste product link">
+        ${urlDomain ? `<div style="margin-top:5px;"><a href="${esc(item.url)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--brass-light);text-decoration:none;">↗ ${esc(urlDomain)}</a></div>` : ''}
+      </div>
+      <div class="field">
+        <label>Qty <span class="req">*</span></label>
+        <input type="number" name="qty" min="1" max="999" value="${Math.max(1,parseInt(item.qty)||1)}">
+      </div>
       ${fieldHTML('Type', sel('type', item.type, TYPE_OPTIONS))}
     </div>
     <div class="field-grid fg-1" style="margin-top:12px;">
-      ${fieldHTML('Notes / Specs', `<textarea name="notes" placeholder="Color, finish, fabric, dimensions…">${esc(item.notes)}</textarea>`)}
+      ${fieldHTML('Notes / Specs', `<textarea name="notes" placeholder="Color, finish, fabric, dimensions, anything specific…">${esc(item.notes)}</textarea>`)}
     </div>
     ${isAdmin ? `
     <div class="admin-strip">
@@ -452,11 +451,26 @@ function itemCardHTML(item, idx, isAdmin) {
 /* ─── Collect items from DOM ─────────────────────────────────── */
 function collectItems() {
   return [...document.querySelectorAll('.item-card')].map(card => {
-    const id  = card.dataset.id;
-    const get = n => (card.querySelector(`[name="${n}"]`)||{}).value || '';
-    return { id, name:get('name'), url:get('url'), qty:get('qty')||1, type:get('type'), notes:get('notes'),
-      priceEach:get('priceEach'), stock:get('stock'), status:get('status')||'Pending' };
+    const get = n => (card.querySelector(`[name="${n}"]`) || {}).value || '';
+    return {
+      id: card.dataset.id,
+      name: get('name'), url: get('url'),
+      qty: Math.max(1, parseInt(get('qty')) || 1),
+      type: get('type'), notes: get('notes'),
+      priceEach: get('priceEach'), stock: get('stock'),
+      status: get('status') || 'Pending'
+    };
   });
+}
+
+/* ─── Validation ─────────────────────────────────────────────── */
+function validateItems(items) {
+  const errors = [];
+  items.forEach((it, i) => {
+    if (!it.name.trim()) errors.push(`Item ${i+1}: name is required.`);
+    if (parseInt(it.qty) < 1 || isNaN(parseInt(it.qty))) errors.push(`Item ${i+1}: quantity must be at least 1.`);
+  });
+  return errors;
 }
 
 /* ─── Save status indicator ──────────────────────────────────── */
@@ -480,18 +494,62 @@ function scheduleSave(id, getSubmitted) {
   showStatus('saving', 'Saving…');
   _debounce = setTimeout(async () => {
     const items = collectItems();
-    await saveOrder(id, { items, submitted: getSubmitted() });
-    showStatus('saved', 'Saved ✓');
+    const r = await saveOrder(id, { items, submitted: getSubmitted() });
+    if (r && r.ok === false) {
+      showStatus('error', 'Save failed — retrying…');
+      // Retry once after 3s
+      setTimeout(() => scheduleSave(id, getSubmitted), 3000);
+    } else {
+      showStatus('saved', 'Saved ✓');
+    }
   }, 1500);
+}
+
+/* ─── Spinner ────────────────────────────────────────────────── */
+function showSpinner(msg) {
+  document.getElementById('app').innerHTML = `
+    <div style="text-align:center;padding:80px 0;">
+      <div style="width:36px;height:36px;border:2px solid var(--brass);border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 20px;"></div>
+      <p style="color:rgba(246,243,238,0.4);font-size:14px;">${msg||'Loading…'}</p>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+}
+
+function showError(msg, retryFn) {
+  document.getElementById('app').innerHTML = `
+    <div style="max-width:480px;margin:80px auto;text-align:center;padding:0 24px;">
+      <div style="font-size:36px;margin-bottom:16px;">⚠️</div>
+      <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;margin-bottom:12px;">Something went wrong</h2>
+      <p style="color:rgba(246,243,238,0.5);margin-bottom:28px;line-height:1.7;">${msg}</p>
+      ${retryFn ? '<button class="btn btn-brass" id="retryBtn">Try Again</button>' : ''}
+    </div>`;
+  if (retryFn) document.getElementById('retryBtn').addEventListener('click', retryFn);
 }
 
 /* ─── CLIENT VIEW ────────────────────────────────────────────── */
 async function renderClient() {
   const id   = CLIENT_ID;
   const name = cap(id);
-  const data = await loadOrder(id) || { items: [newItem()], submitted: false };
-  let submitted = data.submitted;
-  let items = data.items && data.items.length ? data.items : [newItem()];
+
+  showSpinner('Loading your order…');
+
+  let data;
+  try {
+    data = await loadOrder(id);
+  } catch(e) {
+    showError('We couldn't load your order. Please check your connection and try again.', renderClient);
+    return;
+  }
+  if (!data) {
+    showError('We couldn't connect to the server. Please try refreshing the page.', renderClient);
+    return;
+  }
+
+  // If previously submitted → fresh blank form. Old order is locked in the sheet.
+  let submitted = false;
+  let items = (data.submitted || !data.items || !data.items.length)
+    ? [newItem()]
+    : data.items;
 
   function getSubmitted() { return submitted; }
 
@@ -499,21 +557,14 @@ async function renderClient() {
     const gt = orderTotal(items.filter(it => it.priceEach));
     document.getElementById('app').innerHTML = `
       <div class="page-eyebrow">Furniture Order</div>
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px;">
-        <h1 class="page-title" style="margin-bottom:0;">${name}'s Order</h1>
-        ${submitted ? '<span class="badge">Submitted</span>' : ''}
-      </div>
-      <p class="page-sub">
-        ${submitted
-          ? 'Your order has been submitted. Robbie will get back to you with pricing. You can still add items below if needed — just submit again when done.'
-          : 'Add the items you\'d like sourced. Paste a reference link, add quantity and any specs. Your list saves automatically — come back anytime. Hit <strong>Submit for Quote</strong> when you\'re ready.'}
-      </p>
+      <h1 class="page-title" style="margin-bottom:14px;">${name}'s Order</h1>
+      <p class="page-sub">Add the items you'd like sourced below. Paste a reference link, add quantity and any specs. Your list <strong>saves automatically</strong> as you type — come back anytime from any device. Hit <strong>Submit for Quote</strong> when you're done.</p>
 
       <div class="items-list" id="itemsList">
         ${items.map((it,i) => itemCardHTML(it, i, false)).join('')}
       </div>
 
-      <button class="add-btn" id="addBtn">+ Add Another Item</button>
+      <button class="add-btn" id="addBtn">＋ Add Another Item</button>
 
       ${gt > 0 ? `
       <div class="totals-card">
@@ -531,19 +582,22 @@ async function renderClient() {
       <div class="actions">
         <button class="btn btn-outline" id="saveBtn">Save Draft</button>
         <button class="btn btn-brass" id="submitBtn">Submit for Quote →</button>
-      </div>
-    `;
+      </div>`;
     attachClientEvents();
   }
 
   function attachClientEvents() {
-    // Trigger save on any input change
-    document.getElementById('itemsList').addEventListener('input', () => scheduleSave(id, getSubmitted));
+    // Auto-save on any input change
+    document.getElementById('itemsList').addEventListener('input',  () => scheduleSave(id, getSubmitted));
     document.getElementById('itemsList').addEventListener('change', () => scheduleSave(id, getSubmitted));
 
-    // Remove item
+    // Remove item — confirm first
     document.querySelectorAll('[data-remove]').forEach(btn => {
       btn.addEventListener('click', () => {
+        const card = btn.closest('.item-card');
+        const nameEl = card.querySelector('[name="name"]');
+        const itemName = nameEl && nameEl.value.trim() ? `"${nameEl.value.trim()}"` : 'this item';
+        if (!confirm(`Remove ${itemName}?`)) return;
         items = collectItems().filter(it => it.id !== btn.dataset.remove);
         if (!items.length) items = [newItem()];
         render();
@@ -557,32 +611,51 @@ async function renderClient() {
       items.push(newItem());
       render();
       scheduleSave(id, getSubmitted);
-      document.querySelector('.item-card:last-child').scrollIntoView({ behavior:'smooth', block:'start' });
+      requestAnimationFrame(() => {
+        const last = document.querySelector('.item-card:last-child');
+        if (last) last.scrollIntoView({ behavior:'smooth', block:'start' });
+      });
     });
 
-    // Save draft
+    // Manual save draft
     document.getElementById('saveBtn').addEventListener('click', async () => {
+      clearTimeout(_debounce);
       items = collectItems();
       const btn = document.getElementById('saveBtn');
       btn.textContent = 'Saving…'; btn.disabled = true;
+      showStatus('saving', 'Saving…');
       await saveOrder(id, { items, submitted });
-      btn.textContent = 'Saved ✓'; 
+      showStatus('saved', 'Saved ✓');
+      btn.textContent = 'Saved ✓';
       setTimeout(() => { btn.textContent = 'Save Draft'; btn.disabled = false; }, 2000);
     });
 
-    // Submit
+    // Submit for quote
     document.getElementById('submitBtn').addEventListener('click', async () => {
       items = collectItems();
-      if (items.some(it => !it.name.trim())) { alert('Please give each item a name before submitting.'); return; }
+      const errors = validateItems(items);
+      if (errors.length) { alert(errors.join('\n')); return; }
+
       const btn = document.getElementById('submitBtn');
       btn.textContent = 'Submitting…'; btn.disabled = true;
-      submitted = true;
-      await saveOrder(id, { items, submitted: true });
+      document.getElementById('saveBtn').disabled = true;
 
-      // Submit to Netlify Forms — triggers email notification to Robbie
-      const summary = items.map((it,i) =>
-        `Item ${i+1}: ${it.name} | Qty: ${it.qty}${it.url ? ' | ' + it.url : ''}${it.notes ? ' | ' + it.notes : ''}`
-      ).join('\n');
+      // Cancel pending debounce and save immediately with submitted:true
+      clearTimeout(_debounce);
+      showStatus('saving', 'Saving…');
+      await saveOrder(id, { items, submitted: true });
+      showStatus('saved', 'Saved ✓');
+      submitted = true;
+
+      // Notify via Netlify Forms — rich email with full item detail
+      const summary = items.map((it,i) => [
+        `Item ${i+1}: ${it.name}`,
+        `  Qty: ${it.qty}`,
+        it.type  ? `  Type: ${it.type}`  : '',
+        it.url   ? `  URL: ${it.url}`    : '',
+        it.notes ? `  Notes: ${it.notes}` : '',
+      ].filter(Boolean).join('\n')).join('\n\n');
+
       const formData = new FormData();
       formData.append('form-name',  'furniture-order');
       formData.append('client',     name);
@@ -590,7 +663,7 @@ async function renderClient() {
       formData.append('item-count', String(items.length));
       formData.append('items',      summary);
       try { await fetch('/', { method: 'POST', body: formData }); }
-      catch(e) { console.warn('Netlify form post failed', e); }
+      catch(e) { console.warn('Netlify notify failed', e); }
 
       // Show success
       document.getElementById('app').innerHTML = `
@@ -598,8 +671,8 @@ async function renderClient() {
           <div class="success-banner">
             <div class="success-icon">✓</div>
             <h2>Order Submitted!</h2>
-            <p>Robbie has been notified and will follow up with pricing shortly. Your order is saved — return to this link anytime to check for updates or add more items.</p>
-            <button class="btn-back" onclick="location.reload()">← Back to My Order</button>
+            <p>Robbie has been notified and will follow up with pricing. Your order is locked and saved. If you'd like to request additional items, use the button below — it will start a fresh order form.</p>
+            <button class="btn-back" onclick="location.reload()">＋ Add More Items</button>
           </div>
         </div>`;
     });
@@ -610,33 +683,36 @@ async function renderClient() {
 
 /* ─── ADMIN VIEW ─────────────────────────────────────────────── */
 async function renderAdmin() {
+
   async function showList() {
-    document.getElementById('app').innerHTML = `<div style="text-align:center;padding:60px 0;color:rgba(246,243,238,0.3);">Loading orders…</div>`;
-    const clients = await listClients();
+    showSpinner('Loading orders…');
+    let clients;
+    try { clients = await listClients(); }
+    catch(e) { showError('Could not load orders. Check your connection.', showList); return; }
 
     document.getElementById('app').innerHTML = `
       <div class="page-eyebrow">Admin</div>
       <h1 class="page-title">All Orders</h1>
       <p class="page-sub">Click an order to open it, fill in pricing, and update statuses.
-        Share client links as: <code style="background:rgba(246,243,238,0.08);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--brass-light);">hodge-ind.com/furniture/?id=firstname</code></p>
-
+        Share client links: <code style="background:rgba(246,243,238,0.08);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--brass-light);">hodge-ind.com/furniture/?id=firstname</code>
+      </p>
       ${clients.length === 0
         ? '<div style="text-align:center;padding:60px 0;color:rgba(246,243,238,0.3);">No orders yet.</div>'
-        : `<div class="order-cards">${clients.map(c => {
-            return `<div class="order-card" data-open="${c.id}">
+        : `<div class="order-cards">${clients.map(c => `
+            <div class="order-card" data-open="${esc(c.id)}">
               <div>
-                <div class="order-card-name">${c.name}</div>
+                <div class="order-card-name">${esc(c.name)}</div>
                 <div class="order-card-meta">
                   ${c.itemCount} item${c.itemCount!==1?'s':''}
                   ${c.submitted ? ' · <span style="color:var(--brass-light)">Submitted</span>' : ' · Draft'}
                 </div>
               </div>
               <div class="order-card-total">
-                ${c.total > 0 ? `<div class="amt">${fmt(c.total)}</div><div class="lbl">subtotal</div>` : '<div class="lbl" style="margin-top:0;">Not yet priced</div>'}
+                ${c.total > 0
+                  ? `<div class="amt">${fmt(c.total)}</div><div class="lbl">subtotal</div>`
+                  : '<div class="lbl" style="margin-top:0;">Not yet priced</div>'}
               </div>
-            </div>`;
-          }).join('')}</div>`}
-    `;
+            </div>`).join('')}</div>`}`;
 
     document.querySelectorAll('[data-open]').forEach(card => {
       card.addEventListener('click', () => showOrder(card.dataset.open));
@@ -644,9 +720,13 @@ async function renderAdmin() {
   }
 
   async function showOrder(id) {
-    const data  = await loadOrder(id);
-    let items   = data?.items?.length ? data.items : [newItem()];
-    const name  = cap(id);
+    showSpinner('Loading order…');
+    let data;
+    try { data = await loadOrder(id); }
+    catch(e) { showError('Could not load this order.', () => showOrder(id)); return; }
+
+    let items = data?.items?.length ? data.items : [newItem()];
+    const name = cap(id);
 
     function render() {
       const gt = orderTotal(items);
@@ -654,33 +734,28 @@ async function renderAdmin() {
         <div style="margin-bottom:28px;">
           <button class="btn btn-outline" id="backBtn" style="margin-bottom:20px;">← All Orders</button>
           <div class="page-eyebrow">Admin — Pricing</div>
-          <h1 class="page-title">${name}'s Order</h1>
+          <h1 class="page-title">${esc(name)}'s Order</h1>
           <p class="page-sub" style="margin-bottom:0;">
-            ${(data?.submitted) ? '<span style="color:var(--brass-light)">Submitted — awaiting your quote.</span>' : 'Draft — not yet submitted.'}
-            Fill in Price Each and Status for each item, then save.
+            ${data?.submitted
+              ? '<span style="color:var(--brass-light)">✓ Submitted — fill in pricing below and save.</span>'
+              : 'Draft — client has not yet submitted.'}
           </p>
         </div>
-
         <div class="items-list" id="itemsList">
           ${items.map((it,i) => itemCardHTML(it, i, true)).join('')}
         </div>
-
         ${gt > 0 ? `
         <div class="totals-card">
-          <div class="totals-row">
-            <span>Order Subtotal</span><span class="totals-main">${fmt(gt)}</span>
-          </div>
-          <div class="totals-row">
-            <span>50% Deposit</span><span class="totals-sub">${fmt(gt * 0.5)}</span>
-          </div>
+          <div class="totals-row"><span>Order Subtotal</span><span class="totals-main">${fmt(gt)}</span></div>
+          <div class="totals-row"><span>50% Deposit</span><span class="totals-sub">${fmt(gt*0.5)}</span></div>
         </div>` : ''}
-
         <div class="actions">
           <button class="btn btn-brass" id="savePricingBtn">Save Pricing →</button>
-        </div>
-      `;
+        </div>`;
 
       document.getElementById('backBtn').addEventListener('click', showList);
+
+      // Admin remove — no confirm needed
       document.querySelectorAll('[data-remove]').forEach(btn => {
         btn.addEventListener('click', () => {
           items = collectItems().filter(it => it.id !== btn.dataset.remove);
@@ -688,11 +763,25 @@ async function renderAdmin() {
           render();
         });
       });
+
+      // Admin auto-save on pricing changes
+      document.getElementById('itemsList').addEventListener('input',  () => {
+        clearTimeout(_debounce);
+        showStatus('saving', 'Saving…');
+        _debounce = setTimeout(async () => {
+          items = collectItems();
+          await saveOrder(id, { ...data, items });
+          showStatus('saved', 'Saved ✓');
+        }, 1500);
+      });
+
       document.getElementById('savePricingBtn').addEventListener('click', async () => {
         items = collectItems();
         const btn = document.getElementById('savePricingBtn');
         btn.textContent = 'Saving…'; btn.disabled = true;
+        showStatus('saving', 'Saving…');
         await saveOrder(id, { ...data, items });
+        showStatus('saved', 'Saved ✓');
         btn.textContent = 'Saved ✓';
         setTimeout(() => { btn.textContent = 'Save Pricing →'; btn.disabled = false; }, 2000);
       });
@@ -710,7 +799,7 @@ function renderLanding() {
     <div class="landing">
       <div class="page-eyebrow" style="justify-content:center;">Hodge Industries</div>
       <h1 class="page-title">Furniture Orders</h1>
-      <p>You'll need a personalized link from Robbie to access your order form. Check your email or text him to get your link.</p>
+      <p>You'll need a personalized link from Robbie to access your order form. Check your email or reach out to get your link.</p>
     </div>`;
 }
 
