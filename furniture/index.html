@@ -1116,7 +1116,8 @@ function getSavedId() {
     var small = window.matchMedia('(max-width: 768px)').matches;
     v.src = small ? v.dataset.mobile : v.dataset.desktop;
   });
-</script>
+
+/* ─── Boot ───────────────────────────────────────────────────── */
 if (IS_ADMIN) {
   renderAdmin();
 } else if (CLIENT_ID) {
