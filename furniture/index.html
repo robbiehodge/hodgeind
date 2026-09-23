@@ -1191,7 +1191,51 @@ function getSavedId() {
 
 /* ─── Boot ───────────────────────────────────────────────────── */
 if (IS_ADMIN) {
-  renderAdmin();
+  // Password protect the admin area
+  const ADMIN_PASS = 'hodge2026admin';
+  const passKey    = 'hodge_admin_auth';
+  const authed     = (() => { try { return sessionStorage.getItem(passKey) === ADMIN_PASS; } catch(e) { return false; } })();
+
+  if (!authed) {
+    document.getElementById('app').innerHTML = `
+      <div style="max-width:380px;margin:100px auto;padding:0 24px;text-align:center;">
+        <div class="page-eyebrow" style="justify-content:center;margin-bottom:20px;">Hodge Industries</div>
+        <h1 class="page-title" style="margin-bottom:24px;">Admin Access</h1>
+        <div style="background:rgba(246,243,238,0.04);border:1px solid var(--line-dark);border-radius:10px;padding:28px;">
+          <div class="field" style="margin-bottom:16px;text-align:left;">
+            <label>Password</label>
+            <input id="adminPassInput" type="password" placeholder="Enter password"
+              style="width:100%;background:rgba(22,21,18,0.6);border:1px solid var(--line-dark);border-radius:5px;
+                     color:var(--paper);font-size:15px;padding:11px 14px;outline:none;font-family:'Inter',sans-serif;">
+          </div>
+          <button id="adminPassBtn" class="btn btn-brass" style="width:100%;padding:13px;font-size:14px;font-weight:700;cursor:pointer;">
+            Enter Admin →
+          </button>
+          <p id="adminPassErr" style="display:none;color:#e07070;font-size:13px;margin-top:12px;">Incorrect password.</p>
+        </div>
+      </div>`;
+
+    const input = document.getElementById('adminPassInput');
+    const btn   = document.getElementById('adminPassBtn');
+    const err   = document.getElementById('adminPassErr');
+
+    const attempt = () => {
+      if (input.value === ADMIN_PASS) {
+        try { sessionStorage.setItem(passKey, ADMIN_PASS); } catch(e) {}
+        renderAdmin();
+      } else {
+        err.style.display = 'block';
+        input.value = '';
+        input.focus();
+      }
+    };
+
+    btn.addEventListener('click', attempt);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') attempt(); });
+  } else {
+    renderAdmin();
+  }
+}
 } else if (CLIENT_ID) {
   saveIdLocally(CLIENT_ID); // persist this session's ID
   renderClient();
