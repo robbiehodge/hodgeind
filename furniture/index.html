@@ -957,6 +957,7 @@ async function renderAdmin() {
       btn.textContent = 'Exported ✓';
       setTimeout(() => { btn.textContent = 'Export All to CSV →'; btn.disabled = false; }, 2000);
     });
+  } // end showList
 
   async function showOrder(id) {
     showSpinner('Loading quote…');
