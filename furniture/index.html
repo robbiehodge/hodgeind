@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Furniture Quotes | Hodge Industries</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-13ZZQ1948W"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-13ZZQ1948W');
+</script>
+<!-- Apollo -->
+<script>function initApollo(){var n=Math.random().toString(36).substring(7),o=document.createElement("script");
+o.src="https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache="+n,o.async=!0,o.defer=!0,
+o.onload=function(){window.trackingFunctions.onLoad({appId:"6aa9b9d62eccc80018d566b9"})},
+document.head.appendChild(o)}initApollo();</script>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#221f1b">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -862,7 +875,10 @@ async function renderAdmin() {
 
     document.getElementById('app').innerHTML = `
       <div class="page-eyebrow">Admin</div>
-      <h1 class="page-title">All Quote Requests</h1>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:8px;">
+        <h1 class="page-title" style="margin-bottom:0;">All Quote Requests</h1>
+        <button id="exportBtn" class="btn btn-brass" style="font-size:13px;">Export All to CSV →</button>
+      </div>
       <p class="page-sub">Click a quote to open it, fill in pricing, and update statuses.
         Share client links: <code style="background:rgba(246,243,238,0.08);padding:2px 8px;border-radius:4px;font-size:12px;color:var(--brass-light);">hodge-ind.com/furniture/?id=firstname</code>
       </p>
@@ -887,7 +903,61 @@ async function renderAdmin() {
     document.querySelectorAll('[data-open]').forEach(card => {
       card.addEventListener('click', () => showOrder(card.dataset.open));
     });
-  }
+
+    // Export all submitted quotes to CSV
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('exportBtn');
+      btn.textContent = 'Loading…'; btn.disabled = true;
+
+      // Load full item detail for each submitted client
+      const submitted = clients.filter(c => c.submitted);
+      if (!submitted.length) {
+        alert('No submitted quotes to export.');
+        btn.textContent = 'Export All to CSV →'; btn.disabled = false;
+        return;
+      }
+
+      const rows = [['Client Name', 'Email', 'Phone', 'Item #', 'Item Name', 'Reference URL', 'Quantity', 'Type', 'Notes / Specs']];
+
+      for (const c of submitted) {
+        const data = await loadOrder(c.id);
+        if (!data || !data.items) continue;
+        const contact = data.contact || {};
+        data.items.forEach((it, i) => {
+          rows.push([
+            contact.name  || c.name || '',
+            contact.email || '',
+            contact.phone || '',
+            i + 1,
+            it.name  || '',
+            it.url   || '',
+            it.qty   || 1,
+            it.type  || '',
+            it.notes || ''
+          ]);
+        });
+        // Blank row between clients for readability
+        rows.push(['', '', '', '', '', '', '', '', '']);
+      }
+
+      // Build CSV
+      const csv = rows.map(r =>
+        r.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(',')
+      ).join('\n');
+
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'hodge-furniture-quotes-' + new Date().toISOString().slice(0,10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      btn.textContent = 'Exported ✓';
+      setTimeout(() => { btn.textContent = 'Export All to CSV →'; btn.disabled = false; }, 2000);
+    });
+  } // end showList
 
   async function showOrder(id) {
     showSpinner('Loading quote…');
@@ -1121,7 +1191,51 @@ function getSavedId() {
 
 /* ─── Boot ───────────────────────────────────────────────────── */
 if (IS_ADMIN) {
-  renderAdmin();
+  // Password protect the admin area
+  const ADMIN_PASS = 'hodge2026admin';
+  const passKey    = 'hodge_admin_auth';
+  const authed     = (() => { try { return sessionStorage.getItem(passKey) === ADMIN_PASS; } catch(e) { return false; } })();
+
+  if (!authed) {
+    document.getElementById('app').innerHTML = `
+      <div style="max-width:380px;margin:100px auto;padding:0 24px;text-align:center;">
+        <div class="page-eyebrow" style="justify-content:center;margin-bottom:20px;">Hodge Industries</div>
+        <h1 class="page-title" style="margin-bottom:24px;">Admin Access</h1>
+        <div style="background:rgba(246,243,238,0.04);border:1px solid var(--line-dark);border-radius:10px;padding:28px;">
+          <div class="field" style="margin-bottom:16px;text-align:left;">
+            <label>Password</label>
+            <input id="adminPassInput" type="password" placeholder="Enter password"
+              style="width:100%;background:rgba(22,21,18,0.6);border:1px solid var(--line-dark);border-radius:5px;
+                     color:var(--paper);font-size:15px;padding:11px 14px;outline:none;font-family:'Inter',sans-serif;">
+          </div>
+          <button id="adminPassBtn" class="btn btn-brass" style="width:100%;padding:13px;font-size:14px;font-weight:700;cursor:pointer;">
+            Enter Admin →
+          </button>
+          <p id="adminPassErr" style="display:none;color:#e07070;font-size:13px;margin-top:12px;">Incorrect password.</p>
+        </div>
+      </div>`;
+
+    const input = document.getElementById('adminPassInput');
+    const btn   = document.getElementById('adminPassBtn');
+    const err   = document.getElementById('adminPassErr');
+
+    const attempt = () => {
+      if (input.value === ADMIN_PASS) {
+        try { sessionStorage.setItem(passKey, ADMIN_PASS); } catch(e) {}
+        renderAdmin();
+      } else {
+        err.style.display = 'block';
+        input.value = '';
+        input.focus();
+      }
+    };
+
+    btn.addEventListener('click', attempt);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') attempt(); });
+  } else {
+    renderAdmin();
+  }
+}
 } else if (CLIENT_ID) {
   saveIdLocally(CLIENT_ID); // persist this session's ID
   renderClient();
