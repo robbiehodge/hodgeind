@@ -412,6 +412,8 @@ async function api(payload) {
     if (payload.items)    url.searchParams.set('items', JSON.stringify(payload.items));
     if (payload.contact)  url.searchParams.set('contact', JSON.stringify(payload.contact));
     if (payload.submitted !== undefined) url.searchParams.set('submitted', payload.submitted);
+    if (payload.shipping !== undefined) url.searchParams.set('shipping', JSON.stringify(payload.shipping));
+    if (payload.approval !== undefined) url.searchParams.set('approval', payload.approval);
 
     const r = await fetch(url.toString());
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -425,10 +427,16 @@ async function api(payload) {
 async function loadOrder(id) {
   const r = await api({ action:'load', clientId: id });
   if (!r.ok) return null;
-  return { items: r.items || [], submitted: r.submitted || false, contact: r.contact || {} };
+  return {
+    items: r.items || [], submitted: r.submitted || false, contact: r.contact || {},
+    shipping: r.shipping || { amount: '', included: false }, approval: r.approval || 'pending'
+  };
 }
 async function saveOrder(id, data) {
-  return api({ action:'save', clientId: id, items: data.items, submitted: data.submitted, contact: data.contact || {} });
+  return api({
+    action:'save', clientId: id, items: data.items, submitted: data.submitted,
+    contact: data.contact || {}, shipping: data.shipping, approval: data.approval
+  });
 }
 async function listClients() {
   const r = await api({ action:'listClients' });
@@ -609,31 +617,126 @@ async function renderClient() {
     return;
   }
 
-  // If already submitted — show locked read-only screen
+  // If already submitted — show locked read-only screen (with pricing/approval if present)
   if (data.submitted) {
     const cleanUrl = location.origin + location.pathname + '?id=' + id;
-    document.getElementById('app').innerHTML = `
-      <div class="success-screen">
-        <div class="success-banner">
-          <div class="success-icon">✓</div>
-          <h2>Quote Submitted</h2>
-          <p>Your quote has been received and is locked. Robbie will follow up with pricing shortly.</p>
-          <p style="margin-top:12px;font-size:13px;color:rgba(246,243,238,0.4);">Need to add something? Reply to your confirmation email or contact Robbie directly.</p>
-        </div>
-        ${data.items && data.items.length ? `
-        <div style="margin-top:8px;">
-          <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--brass);font-weight:600;margin-bottom:16px;">Items Submitted</div>
-          ${data.items.map((it,i) => `
-            <div style="padding:14px 0;border-bottom:1px solid var(--line-dark);display:flex;gap:16px;align-items:flex-start;">
-              <span style="font-size:11px;color:var(--brass);font-weight:600;flex-shrink:0;width:20px;">${i+1}</span>
-              <div>
-                <div style="font-size:14px;color:var(--paper);margin-bottom:2px;">${esc(it.name)}</div>
-                <div style="font-size:12px;color:rgba(246,243,238,0.4);">Qty: ${it.qty}${it.type ? ' · ' + esc(it.type) : ''}${it.notes ? ' · ' + esc(it.notes) : ''}</div>
-                ${it.url ? `<div style="margin-top:4px;"><a href="${esc(it.url)}" target="_blank" style="font-size:11px;color:var(--brass-light);">↗ View Item</a></div>` : ''}
+    const shipping = data.shipping || { amount: '', included: false };
+    const hasPricing = data.items && data.items.some(it => it.priceEach && parseFloat(it.priceEach) > 0);
+    const itemsSub = hasPricing ? orderTotal(data.items) : 0;
+    const shipAmt = parseFloat(shipping.amount) || 0;
+    const total = shipping.included ? itemsSub + shipAmt : itemsSub;
+    const deposit = total * 0.5;
+    let approvalStatus = data.approval || 'pending';
+
+    function renderLockedScreen() {
+      document.getElementById('app').innerHTML = `
+        <div class="success-screen">
+          <div class="success-banner">
+            <div class="success-icon">✓</div>
+            <h2>Quote Submitted</h2>
+            <p>${hasPricing
+              ? (approvalStatus === 'pending'
+                  ? "Your pricing is ready below. Review and approve when you're ready."
+                  : approvalStatus === 'approved'
+                    ? 'Quote approved — preparing your deposit invoice.'
+                    : 'Quote approved — check your email for the deposit invoice.')
+              : 'Your quote has been received and is locked. Robbie will follow up with pricing shortly.'}</p>
+            <p style="margin-top:12px;font-size:13px;color:rgba(246,243,238,0.4);">Need to add something? Reply to your confirmation email or contact Robbie directly.</p>
+          </div>
+
+          ${data.items && data.items.length ? `
+          <div style="margin-top:8px;margin-bottom:24px;">
+            <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--brass);font-weight:600;margin-bottom:16px;">Items ${hasPricing ? '& Pricing' : 'Submitted'}</div>
+            ${data.items.map((it,i) => `
+              <div style="padding:14px 0;border-bottom:1px solid var(--line-dark);display:flex;gap:16px;align-items:flex-start;justify-content:space-between;">
+                <div style="display:flex;gap:16px;align-items:flex-start;flex:1;">
+                  <span style="font-size:11px;color:var(--brass);font-weight:600;flex-shrink:0;width:20px;">${i+1}</span>
+                  <div>
+                    <div style="font-size:14px;color:var(--paper);margin-bottom:2px;">${esc(it.name)}</div>
+                    <div style="font-size:12px;color:rgba(246,243,238,0.4);">Qty: ${it.qty}${it.type ? ' · ' + esc(it.type) : ''}${it.notes ? ' · ' + esc(it.notes) : ''}</div>
+                    ${it.url ? `<div style="margin-top:4px;"><a href="${esc(it.url)}" target="_blank" style="font-size:11px;color:var(--brass-light);">↗ View Item</a></div>` : ''}
+                  </div>
+                </div>
+                ${it.priceEach && parseFloat(it.priceEach) > 0 ? `<div style="font-size:14px;color:var(--brass-light);font-weight:600;flex-shrink:0;">${fmt(parseFloat(it.priceEach) * (it.qty||1))}</div>` : ''}
+              </div>`).join('')}
+          </div>` : ''}
+
+          ${hasPricing ? `
+          <div class="totals-card">
+            <div class="totals-row"><span>Items Subtotal</span><span class="totals-sub">${fmt(itemsSub)}</span></div>
+            ${shipAmt > 0 ? `<div class="totals-row"><span>Shipping${shipping.included ? '' : ' (billed separately)'}</span><span class="totals-sub">${fmt(shipAmt)}</span></div>` : ''}
+            <div class="totals-row"><span>${shipping.included ? 'Total — Out the Door' : 'Total'}</span><span class="totals-main">${fmt(total)}</span></div>
+            <div class="totals-row"><span>50% Deposit</span><span class="totals-sub">${fmt(deposit)}</span></div>
+          </div>
+
+          <div id="approvalArea" style="text-align:center;margin-top:24px;">
+            ${approvalStatus === 'pending' ? `
+              <button class="btn btn-brass" id="approveBtn" style="padding:14px 40px;font-size:15px;">✓ Approve This Quote</button>
+              <p style="font-size:12px;color:rgba(246,243,238,0.35);margin-top:12px;">Approving sends you an invoice for the 50% deposit to begin your order.</p>
+            ` : approvalStatus === 'approved' ? `
+              <div style="color:var(--brass-light);font-size:14px;">
+                <div style="width:20px;height:20px;border:2px solid var(--brass);border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:8px;"></div>
+                Preparing your deposit invoice…
               </div>
-            </div>`).join('')}
-        </div>` : ''}
-      </div>`;
+              <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+            ` : `
+              <div style="background:rgba(169,121,63,0.1);border:1px solid rgba(169,121,63,0.3);border-radius:8px;padding:16px 20px;color:var(--brass-light);font-size:14px;">
+                ✓ Approved — check your email for the deposit invoice from Square.
+              </div>
+            `}
+          </div>` : ''}
+        </div>`;
+
+      if (approvalStatus === 'pending') {
+        const approveBtn = document.getElementById('approveBtn');
+        if (approveBtn) approveBtn.addEventListener('click', async () => {
+          if (!confirm('Approve this quote? This will send you an invoice for the 50% deposit.')) return;
+          approveBtn.textContent = 'Approving…'; approveBtn.disabled = true;
+
+          approvalStatus = 'approved';
+          await saveOrder(id, { ...data, approval: 'approved' });
+          renderLockedScreen();
+
+          try {
+            const r = await fetch('/api/approve-quote', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                clientId: id,
+                email: (data.contact || {}).email,
+                name: (data.contact || {}).name,
+                phone: (data.contact || {}).phone,
+                depositAmount: deposit.toFixed(2),
+                description: `Hodge Industries Furniture Order — ${cap(id)} — 50% Deposit`,
+              }),
+            });
+            const result = await r.json();
+            if (result.ok) {
+              approvalStatus = 'invoiced';
+              await saveOrder(id, { ...data, approval: 'invoiced' });
+              renderLockedScreen();
+            } else {
+              throw new Error(result.error || 'Invoice creation failed');
+            }
+          } catch(e) {
+            console.error('Approve failed', e);
+            alert('Something went wrong creating your invoice. Robbie has been notified — you can also reply to your confirmation email.');
+            approvalStatus = 'pending';
+            await saveOrder(id, { ...data, approval: 'pending' });
+            renderLockedScreen();
+          }
+        });
+      }
+    }
+
+    renderLockedScreen();
+
+    if (params.get('action') === 'approve' && approvalStatus === 'pending' && hasPricing) {
+      setTimeout(() => {
+        const btn = document.getElementById('approveBtn');
+        if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
     return;
   }
 
@@ -965,12 +1068,16 @@ async function renderAdmin() {
     try { data = await loadOrder(id); }
     catch(e) { showError('Could not load this quote.', () => showOrder(id)); return; }
 
-    let items   = data?.items?.length ? data.items : [newItem()];
-    let contact = data?.contact || {};
-    const name  = cap(id);
+    let items    = data?.items?.length ? data.items : [newItem()];
+    let contact  = data?.contact || {};
+    let shipping = data?.shipping || { amount: '', included: false };
+    const name   = cap(id);
 
     function render() {
       const gt = orderTotal(items);
+      const shipAmt = parseFloat(shipping.amount) || 0;
+      const grandTotal = shipping.included ? gt + shipAmt : gt;
+
       document.getElementById('app').innerHTML = `
         <div style="margin-bottom:28px;">
           <button class="btn btn-outline" id="backBtn" style="margin-bottom:20px;">← All Quotes</button>
@@ -991,13 +1098,34 @@ async function renderAdmin() {
         <div class="items-list" id="itemsList">
           ${items.map((it,i) => itemCardHTML(it, i, true)).join('')}
         </div>
+
+        <div class="item-card" style="margin-bottom:20px;border-color:rgba(169,121,63,0.3);">
+          <div class="item-card-header" style="margin-bottom:14px;">
+            <span class="item-num">Shipping</span>
+          </div>
+          <div class="field-grid" style="grid-template-columns:200px 1fr;gap:14px;align-items:end;">
+            <div class="field">
+              <label>Shipping Cost ($)</label>
+              <input type="number" id="shipAmount" step="0.01" min="0" value="${esc(shipping.amount)}" placeholder="0.00">
+            </div>
+            <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:rgba(246,243,238,0.7);cursor:pointer;padding-bottom:9px;">
+              <input type="checkbox" id="shipIncluded" ${shipping.included ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--brass);cursor:pointer;">
+              Include shipping in the total sent to client
+            </label>
+          </div>
+        </div>
+
         ${gt > 0 ? `
         <div class="totals-card">
-          <div class="totals-row"><span>Quote Subtotal</span><span class="totals-main">${fmt(gt)}</span></div>
-          <div class="totals-row"><span>50% Deposit</span><span class="totals-sub">${fmt(gt*0.5)}</span></div>
+          <div class="totals-row"><span>Items Subtotal</span><span class="totals-main">${fmt(gt)}</span></div>
+          ${shipAmt > 0 ? `<div class="totals-row"><span>Shipping${shipping.included ? '' : ' (not included below)'}</span><span class="totals-sub">${fmt(shipAmt)}</span></div>` : ''}
+          <div class="totals-row"><span>${shipping.included ? 'Total — Out the Door' : 'Total (excl. shipping)'}</span><span class="totals-main">${fmt(grandTotal)}</span></div>
+          <div class="totals-row"><span>50% Deposit</span><span class="totals-sub">${fmt(grandTotal*0.5)}</span></div>
         </div>` : ''}
+
         <div class="actions">
-          <button class="btn btn-brass" id="savePricingBtn">Save Pricing →</button>
+          <button class="btn btn-outline" id="savePricingBtn">Save Pricing</button>
+          <button class="btn btn-brass" id="sendPricingBtn">Send Pricing to Client →</button>
         </div>`;
 
       document.getElementById('backBtn').addEventListener('click', showList);
@@ -1010,26 +1138,91 @@ async function renderAdmin() {
         });
       });
 
-      // Admin auto-save on pricing changes
-      document.getElementById('itemsList').addEventListener('input', () => {
+      function collectShipping() {
+        return {
+          amount: document.getElementById('shipAmount').value || '',
+          included: document.getElementById('shipIncluded').checked
+        };
+      }
+
+      // Admin auto-save on pricing / shipping changes
+      const autoSaveHandler = () => {
         clearTimeout(_debounce);
         showStatus('saving', 'Saving…');
         _debounce = setTimeout(async () => {
           items = collectItems();
-          await saveOrder(id, { ...data, items, contact });
+          shipping = collectShipping();
+          await saveOrder(id, { ...data, items, contact, shipping });
           showStatus('saved', 'Saved ✓');
         }, 1500);
-      });
+      };
+      document.getElementById('itemsList').addEventListener('input', autoSaveHandler);
+      document.getElementById('shipAmount').addEventListener('input', () => { autoSaveHandler(); });
+      document.getElementById('shipIncluded').addEventListener('change', () => { render(); autoSaveHandler(); });
 
       document.getElementById('savePricingBtn').addEventListener('click', async () => {
         items = collectItems();
+        shipping = collectShipping();
         const btn = document.getElementById('savePricingBtn');
         btn.textContent = 'Saving…'; btn.disabled = true;
         showStatus('saving', 'Saving…');
-        await saveOrder(id, { ...data, items, contact });
+        await saveOrder(id, { ...data, items, contact, shipping });
         showStatus('saved', 'Saved ✓');
         btn.textContent = 'Saved ✓';
-        setTimeout(() => { btn.textContent = 'Save Pricing →'; btn.disabled = false; }, 2000);
+        setTimeout(() => { btn.textContent = 'Save Pricing'; btn.disabled = false; }, 2000);
+      });
+
+      document.getElementById('sendPricingBtn').addEventListener('click', async () => {
+        if (!contact.email) {
+          alert('This client has no email on file — cannot send pricing.');
+          return;
+        }
+        items = collectItems();
+        shipping = collectShipping();
+        const unpriced = items.filter(it => !it.priceEach || parseFloat(it.priceEach) <= 0);
+        if (unpriced.length) {
+          if (!confirm(`${unpriced.length} item(s) don't have a price yet. Send anyway?`)) return;
+        }
+
+        const btn = document.getElementById('sendPricingBtn');
+        btn.textContent = 'Sending…'; btn.disabled = true;
+
+        // Save first so the sheet reflects what was sent — reset approval since pricing changed
+        await saveOrder(id, { ...data, items, contact, shipping, approval: 'pending' });
+
+        const itemsSub = orderTotal(items);
+        const shipAmt2  = parseFloat(shipping.amount) || 0;
+        const total2    = shipping.included ? itemsSub + shipAmt2 : itemsSub;
+
+        try {
+          const r = await fetch('/api/send-pricing-to-client', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: contact.email,
+              name: contact.name || name,
+              items,
+              itemsSubtotal: itemsSub,
+              shippingAmount: shipAmt2,
+              shippingIncluded: shipping.included,
+              total: total2,
+              deposit: total2 * 0.5,
+              quoteUrl: location.origin + '/furniture/?id=' + id
+            }),
+          });
+          const result = await r.json();
+          if (result.ok) {
+            btn.textContent = 'Sent ✓';
+            showStatus('saved', 'Pricing sent ✓');
+          } else {
+            throw new Error(result.error || 'Send failed');
+          }
+        } catch(e) {
+          console.error('Send pricing failed', e);
+          alert('Could not send pricing email. Please try again.');
+          btn.textContent = 'Send Pricing to Client →';
+        }
+        setTimeout(() => { btn.textContent = 'Send Pricing to Client →'; btn.disabled = false; }, 3000);
       });
     }
 
